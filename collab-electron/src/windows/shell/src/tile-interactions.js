@@ -39,6 +39,10 @@ export function attachDrag(titleBar, tile, {
   onFocus,
   isSpaceHeld,
   contentOverlay,
+  isTileInSelection,
+  onGroupDragStart,
+  onGroupDragMove,
+  onGroupDragEnd,
 }) {
   function startDrag(e, { deferFocus = false } = {}) {
     if (e.button !== 0) return;
@@ -56,6 +60,10 @@ export function attachDrag(titleBar, tile, {
 
     const groupCtx = getGroupDragContext();
     const isGroupDrag = groupCtx !== null && groupCtx.length > 1;
+
+    // Fire annotation group drag callbacks if this tile is part of the selection
+    const tileSelected = isTileInSelection?.() ?? false;
+    if (tileSelected) onGroupDragStart?.();
 
     const webviews = getAllWebviews();
     disablePointerEvents(webviews);
@@ -87,6 +95,7 @@ export function attachDrag(titleBar, tile, {
         tile.x = startTX + dx;
         tile.y = startTY + dy;
       }
+      if (tileSelected) onGroupDragMove?.(dx, dy);
       onUpdate();
     }
 
@@ -133,6 +142,7 @@ export function attachDrag(titleBar, tile, {
         snapToGrid(tile);
       }
       onUpdate();
+      if (tileSelected && moved) onGroupDragEnd?.();
     }
 
     document.addEventListener("mousemove", onMove);
@@ -165,8 +175,10 @@ export function attachMarquee(canvasEl, {
   viewport,
   tiles,
   onSelectionChange,
+  onRectSelect,
   isShiftHeld,
   isSpaceHeld,
+  isBlocked,
   getAllWebviews,
 }) {
   const tileLayer = canvasEl.querySelector("#tile-layer");
@@ -174,8 +186,9 @@ export function attachMarquee(canvasEl, {
 
   canvasEl.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
-    // Ignore if Space is held (pan gesture)
+    // Ignore if Space is held (pan gesture) or draw mode is active
     if (isSpaceHeld()) return;
+    if (isBlocked?.()) return;
     // Only trigger on clicks directly on the canvas background
     if (
       e.target !== canvasEl &&
@@ -229,6 +242,7 @@ export function attachMarquee(canvasEl, {
       if (!moved) {
         // Click on empty canvas — clear selection
         onSelectionChange(new Set());
+        onRectSelect?.(null);
         return;
       }
 
@@ -265,13 +279,8 @@ export function attachMarquee(canvasEl, {
         }
       }
 
-      if (isShiftHeld()) {
-        // Additive — merge with existing selection handled by caller
-        // Pass the new hits; caller unions with current selection
-        onSelectionChange(hitIds);
-      } else {
-        onSelectionChange(hitIds);
-      }
+      onSelectionChange(hitIds);
+      onRectSelect?.({ left: cTL.x, top: cTL.y, right: cBR.x, bottom: cBR.y });
     }
 
     document.addEventListener("mousemove", onMove);

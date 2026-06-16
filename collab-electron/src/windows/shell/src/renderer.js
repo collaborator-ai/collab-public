@@ -4,6 +4,22 @@ import {
 	tiles, getTile, defaultSize, inferTileType, tileAtPoint,
 	selectTile, clearSelection, getSelectedTiles, getNearestTileInDirection,
 } from "./canvas-state.js";
+import {
+	getDrawMode,
+	setDrawMode,
+	removeConnectedLinesForTile,
+	restoreAnnotations,
+	validateAnnotations,
+	getAnnotationsForSave,
+	annotations,
+	selectAnnotation,
+	clearAnnotationSelection,
+	getSelectedAnnotations,
+	removeAnnotation,
+	getAnnotation,
+	updateAnnotation,
+} from "./annotation-manager.js";
+import { createAnnotationRenderer } from "./annotation-renderer.js";
 import { attachMarquee } from "./tile-interactions.js";
 import { initDarkMode, applyCanvasOpacity } from "./dark-mode.js";
 import { createWebview, isFocusSearchShortcut } from "./webview-factory.js";
@@ -584,13 +600,19 @@ async function init() {
 		onReposition: () => { viewport.redrawGrid(); minimapRef?.update(); },
 		onSaveDebounced(state) {
 			window.shellApi.canvasSaveState(
-				toCenterPointState(state),
+				toCenterPointState({
+					...state,
+					annotations: getAnnotationsForSave(),
+				}),
 			);
 			syncTileList();
 		},
 		onSaveImmediate(state) {
 			window.shellApi.canvasSaveState(
-				toCenterPointState(state),
+				toCenterPointState({
+					...state,
+					annotations: getAnnotationsForSave(),
+				}),
 			);
 			syncTileList();
 		},
@@ -622,6 +644,36 @@ async function init() {
 		},
 		onTileDblClick(tile) {
 			edgeIndicators.panToTile(tile);
+		},
+		onAfterTilesMoved() {
+			annotationRenderer?.onTileMoved();
+		},
+		onTileRemoved(tileId) {
+			const removedIds = removeConnectedLinesForTile(tileId);
+			for (const id of removedIds) annotationRenderer?.removeAnnotationDOM(id);
+		},
+		onGroupDragStart() {
+			// Snapshot selected annotation positions at the start of a tile group drag
+			const selected = getSelectedAnnotations();
+			annGroupDragSnapshot = selected.map((a) => ({ ...a }));
+		},
+		onGroupDragMove(dcx, dcy) {
+			if (!annGroupDragSnapshot || annGroupDragSnapshot.length === 0) return;
+			for (const snap of annGroupDragSnapshot) {
+				if (snap.type === "rect" || snap.type === "text") {
+					updateAnnotation(snap.id, { x: snap.x + dcx, y: snap.y + dcy });
+				} else if (snap.type === "line" && snap.mode === "free") {
+					updateAnnotation(snap.id, {
+						x1: snap.x1 + dcx, y1: snap.y1 + dcy,
+						x2: snap.x2 + dcx, y2: snap.y2 + dcy,
+					});
+				}
+				// connected lines track tiles automatically via onTileMoved — skip
+			}
+			annotationRenderer?.repositionAll();
+		},
+		onGroupDragEnd() {
+			annGroupDragSnapshot = null;
 		},
 	});
 
@@ -655,10 +707,97 @@ async function init() {
 		tileManager, viewportState, viewport, edgeIndicators,
 	});
 
+	// -- Annotation renderer --
+
+	/** @type {ReturnType<import('./annotation-renderer.js').createAnnotationRenderer> | null} */
+	let annotationRenderer = null;
+	let annGroupDragSnapshot = null;
+
+	const drawBtn = document.getElementById("draw-btn");
+	const drawPopover = document.getElementById("draw-popover");
+
+	annotationRenderer = createAnnotationRenderer({
+		annotationLayer: document.getElementById("annotation-layer"),
+		annotationSvg: document.getElementById("annotation-svg"),
+		viewportState,
+		canvasEl,
+		getTiles: () => tiles,
+		getTileDOMs: () => tileManager.getTileDOMs(),
+		onSave: () => tileManager.saveCanvasDebounced(),
+		getSelectedTiles: () => getSelectedTiles(),
+		onTileGroupDragMove: () => tileManager.repositionAllTiles(),
+		onModeChange(mode) {
+			setDrawMode(mode);
+			const panelViewer = document.getElementById("panel-viewer");
+			panelViewer.classList.remove("draw-rect", "draw-text", "draw-line");
+			if (mode !== "pointer") {
+				panelViewer.classList.add(mode);
+				drawBtn.classList.add("active");
+			} else {
+				drawBtn.classList.remove("active");
+			}
+		},
+	});
+
+	// Draw button toggles popover
+	let drawPopoverResizeHandler = null;
+
+	function positionDrawPopover() {
+		const br = drawBtn.getBoundingClientRect();
+		const pr = drawPopover.getBoundingClientRect();
+		drawPopover.style.left = `${Math.max(8, br.right - pr.width)}px`;
+		drawPopover.style.top = `${br.bottom + 4}px`;
+	}
+
+	function openDrawPopover() {
+		drawPopover.classList.remove("hidden");
+		positionDrawPopover();
+		drawPopoverResizeHandler = positionDrawPopover;
+		window.addEventListener("resize", drawPopoverResizeHandler);
+	}
+
+	function closeDrawPopover() {
+		drawPopover.classList.add("hidden");
+		if (drawPopoverResizeHandler) {
+			window.removeEventListener("resize", drawPopoverResizeHandler);
+			drawPopoverResizeHandler = null;
+		}
+	}
+
+	drawBtn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		if (drawPopover.classList.contains("hidden")) {
+			openDrawPopover();
+		} else {
+			closeDrawPopover();
+		}
+	});
+
+	// Tool buttons in popover
+	for (const btn of drawPopover.querySelectorAll(".draw-tool-btn")) {
+		btn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			closeDrawPopover();
+			const tool = btn.dataset.tool;
+			const mode = `draw-${tool}`;
+			annotationRenderer.activateMode(mode);
+		});
+	}
+
+	// Close popover on outside click
+	document.addEventListener("click", (e) => {
+		if (!drawPopover.classList.contains("hidden") &&
+			!drawBtn.contains(e.target) &&
+			!drawPopover.contains(e.target)) {
+			closeDrawPopover();
+		}
+	});
+
 	// -- Wire viewport updates --
 
 	viewport.init(viewportState, () => {
 		tileManager.repositionAllTiles();
+		annotationRenderer?.repositionAll();
 		edgeIndicators.update();
 		minimap.wake();
 		tileManager.saveCanvasDebounced();
@@ -830,7 +969,8 @@ async function init() {
 	canvasEl.addEventListener("dblclick", (e) => {
 		if (
 			spaceHeld || isPanning ||
-			Date.now() < suppressCanvasDblClickUntil
+			Date.now() < suppressCanvasDblClickUntil ||
+			getDrawMode() !== "pointer"
 		) return;
 		if (
 			e.target !== canvasEl && e.target !== gridCanvas &&
@@ -860,6 +1000,7 @@ async function init() {
 			e.target !== canvasEl && e.target !== gridCanvas &&
 			e.target !== tileLayer
 		) return;
+		if (getDrawMode() !== "pointer") return;
 		e.preventDefault();
 
 		const rect = canvasEl.getBoundingClientRect();
@@ -900,6 +1041,25 @@ async function init() {
 
 	// -- Marquee selection --
 
+	function annotationHitsRect(ann, { left, top, right, bottom }, tileCenterMap) {
+		const pointIn = (x, y) => x >= left && x <= right && y >= top && y <= bottom;
+		if (ann.type === "rect") {
+			return ann.x < right && ann.x + ann.width > left &&
+				ann.y < bottom && ann.y + ann.height > top;
+		}
+		if (ann.type === "text") return pointIn(ann.x, ann.y);
+		if (ann.type === "line") {
+			if (ann.mode === "free") {
+				return pointIn(ann.x1, ann.y1) || pointIn(ann.x2, ann.y2);
+			}
+			// connected — O(1) lookup via pre-built map
+			const from = tileCenterMap.get(ann.fromTileId);
+			const to = tileCenterMap.get(ann.toTileId);
+			return (from && pointIn(from.x, from.y)) || (to && pointIn(to.x, to.y));
+		}
+		return false;
+	}
+
 	attachMarquee(canvasEl, {
 		viewport: {
 			get panX() { return viewportState.panX; },
@@ -907,6 +1067,7 @@ async function init() {
 			get zoom() { return viewportState.zoom; },
 		},
 		tiles: () => tiles,
+		isBlocked: () => getDrawMode() !== "pointer",
 		onSelectionChange: (ids) => {
 			if (shiftHeld) {
 				for (const id of ids) selectTile(id);
@@ -920,6 +1081,18 @@ async function init() {
 			tileManager.setFocusedTileId(null);
 			canvasEl.focus();
 			noteSurfaceFocus("canvas");
+		},
+		onRectSelect: (rect) => {
+			clearAnnotationSelection();
+			if (rect) {
+				const tileCenterMap = new Map(
+					tiles.map((t) => [t.id, { x: t.x + t.width / 2, y: t.y + t.height / 2 }]),
+				);
+				for (const ann of annotations) {
+					if (annotationHitsRect(ann, rect, tileCenterMap)) selectAnnotation(ann.id);
+				}
+			}
+			annotationRenderer?.syncSelectionVisuals();
 		},
 		isShiftHeld: () => shiftHeld,
 		isSpaceHeld: () => spaceHeld,
@@ -939,6 +1112,8 @@ async function init() {
 		if (e.key === "Escape" && getSelectedTiles().length > 0) {
 			clearSelection();
 			tileManager.syncSelectionVisuals();
+			clearAnnotationSelection();
+			annotationRenderer?.syncSelectionVisuals();
 			return;
 		}
 
@@ -947,23 +1122,33 @@ async function init() {
 			(activeSurface === "canvas" ||
 				activeSurface === "canvas-tile")
 		) {
-			const selected = getSelectedTiles();
-			if (selected.length === 0) return;
+			const selectedTiles = getSelectedTiles();
+			const selectedAnns = getSelectedAnnotations();
+			if (selectedTiles.length === 0 && selectedAnns.length === 0) return;
 
-			const count = selected.length;
+			const tileCount = selectedTiles.length;
+			const annCount = selectedAnns.length;
+			const parts = [];
+			if (tileCount > 0) parts.push(tileCount === 1 ? "1 tile" : `${tileCount} tiles`);
+			if (annCount > 0) parts.push(annCount === 1 ? "1 annotation" : `${annCount} annotations`);
 			window.shellApi.showConfirmDialog({
-				message: count === 1
-					? "Delete this tile?"
-					: `Delete ${count} tiles?`,
+				message: `Delete ${parts.join(" and ")}?`,
 				detail: "This cannot be undone.",
 				buttons: ["Cancel", "Delete"],
 			}).then((response) => {
 				if (response !== 1) return;
-				for (const t of selected) {
+				for (const t of selectedTiles) {
 					tileManager.closeCanvasTile(t.id);
 				}
 				clearSelection();
 				tileManager.syncSelectionVisuals();
+				for (const ann of selectedAnns) {
+					annotationRenderer?.removeAnnotationDOM(ann.id);
+					removeAnnotation(ann.id);
+				}
+				clearAnnotationSelection();
+				annotationRenderer?.syncSelectionVisuals();
+				tileManager.saveCanvasDebounced();
 				minimap.update();
 			});
 		}
@@ -1676,6 +1861,15 @@ async function init() {
 			: 0;
 		viewport.updateCanvas();
 		tileManager.restoreCanvasState(savedState.tiles);
+		restoreAnnotations(savedState.annotations ?? []);
+		validateAnnotations(
+			new Set(tiles.map((t) => t.id)),
+			(id) => {
+				const t = tiles.find((t2) => t2.id === id);
+				return t ? { x: t.x + t.width / 2, y: t.y + t.height / 2 } : null;
+			},
+		);
+		annotationRenderer.renderAll();
 		viewport.redrawGrid();
 		minimap.update();
 

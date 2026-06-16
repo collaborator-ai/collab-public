@@ -42,7 +42,26 @@
 					<path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"/>
 				</svg>
 			</button>
+			<button type="button" id="draw-btn" aria-label="Annotate canvas" data-tooltip="Annotate canvas">
+				<svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+					<path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z"/>
+				</svg>
+			</button>
+			<div id="draw-popover" class="hidden">
+				<button class="draw-tool-btn" data-tool="rect" title="Rectangle group">
+					<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200Z"/></svg>
+				</button>
+				<button class="draw-tool-btn" data-tool="line" title="Line connector">
+					<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,42.34a8,8,0,0,0-11.32,0l-160,160a8,8,0,0,0,11.32,11.32l160-160A8,8,0,0,0,213.66,42.34Z"/></svg>
+				</button>
+				<button class="draw-tool-btn" data-tool="text" title="Text label">
+					<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M208,56H48A16,16,0,0,0,32,72V96a8,8,0,0,0,16,0V72H120v112H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V72h72V96a8,8,0,0,0,16,0V72A16,16,0,0,0,208,56Z"/></svg>
+				</button>
+			</div>
 			<canvas id="grid-canvas"></canvas>
+			<div id="annotation-layer">
+				<svg id="annotation-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+			</div>
 			<div id="tile-layer"></div>
 			<div id="edge-indicators"></div>
 			<div id="zoom-indicator">100%</div>

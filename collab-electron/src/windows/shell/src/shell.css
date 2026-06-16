@@ -17,6 +17,8 @@
 	--edge-dot-hover: rgb(40, 190, 105);
 	--new-tile-btn-bg: rgb(224, 224, 224);
 	--new-tile-btn-bg-hover: rgb(212, 212, 212);
+	--popover-bg: rgb(240, 240, 240);
+	--popover-border: rgba(0, 0, 0, 0.12);
 
 	--panel-nav-min: 100;
 	--panel-nav-max: 1000;
@@ -41,6 +43,8 @@
 	--edge-dot-hover: rgb(90, 235, 150);
 	--new-tile-btn-bg: rgb(44, 44, 44);
 	--new-tile-btn-bg-hover: rgb(56, 56, 56);
+	--popover-bg: rgb(50, 50, 50);
+	--popover-border: rgba(255, 255, 255, 0.12);
 }
 
 * {
@@ -339,7 +343,7 @@ body.platform-win {
 #update-pill {
 	position: absolute;
 	top: 8px;
-	right: 42px;
+	right: 66px;
 	z-index: 101;
 	-webkit-app-region: no-drag;
 	padding: 2px 9px;
@@ -1295,6 +1299,280 @@ body.platform-win {
 
 .dark .tile-url-input:focus {
 	border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Draw button & tool popover ── */
+
+#draw-btn {
+	position: absolute;
+	top: 10px;
+	right: 48px;
+	z-index: 101;
+	-webkit-app-region: no-drag;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--new-tile-btn-bg);
+	color: var(--muted);
+	cursor: pointer;
+	transition: color 0.15s ease, background 0.15s ease;
+}
+
+#draw-btn:hover,
+#draw-btn.active {
+	color: var(--fg);
+	background: var(--new-tile-btn-bg-hover);
+}
+
+#draw-btn:active {
+	transform: scale(0.94);
+}
+
+#draw-popover {
+	position: fixed;
+	z-index: 1002;
+	display: flex;
+	flex-direction: row;
+	gap: 2px;
+	padding: 4px;
+	background: var(--popover-bg);
+	border: 1px solid var(--popover-border);
+	border-radius: 8px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+#draw-popover.hidden {
+	display: none;
+}
+
+.draw-tool-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: none;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+	transition: color 0.15s, background 0.15s;
+}
+
+.draw-tool-btn:hover {
+	color: var(--fg);
+	background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+/* ── Annotation layer ── */
+
+#annotation-layer {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 1;
+	overflow: visible;
+}
+
+#annotation-svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+}
+
+/* ── Annotation elements ── */
+
+/* .annotation-rect is now an SVG <g> — styles are on the child elements */
+
+.annotation-text {
+	position: absolute;
+	font-family: var(--font-sans);
+	font-weight: 400;
+	pointer-events: auto;
+	cursor: move;
+	user-select: none;
+	white-space: pre;
+	line-height: 1.3;
+}
+
+.annotation-text-editor {
+	position: absolute;
+	font-family: var(--font-sans);
+	font-weight: 400;
+	pointer-events: auto;
+	cursor: text;
+	white-space: pre;
+	line-height: 1.3;
+	min-width: 4px;
+	outline: none;
+	border-bottom: 1px solid currentColor;
+}
+
+/* ── Draw preview ── */
+
+.annotation-preview-rect {
+	position: absolute;
+	border: 2px dashed var(--muted);
+	border-radius: 8px;
+	pointer-events: none;
+	box-sizing: border-box;
+}
+
+/* ── Line target highlight ── */
+
+.annotation-text.annotation-selected {
+	outline: 2px solid #4a9eff !important;
+	outline-offset: 2px;
+}
+
+/* SVG annotation selection — rect and line both use stroke colour */
+g.annotation-selected .ann-rect-visual,
+g.annotation-selected .ann-line-visual {
+	stroke: #4a9eff;
+}
+
+.annotation-line-hover {
+	outline: 2px solid rgba(34, 197, 94, 0.45) !important;
+	outline-offset: 2px;
+}
+
+.annotation-line-source {
+	outline: 2px solid #22c55e !important;
+	outline-offset: 2px;
+}
+
+.annotation-line-target {
+	outline: 2px solid var(--edge-dot) !important;
+	outline-offset: 2px;
+}
+
+/* ── Per-annotation popover ── */
+
+.annotation-popover {
+	position: fixed;
+	z-index: 2000;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 6px;
+	background: var(--popover-bg);
+	border: 1px solid var(--popover-border);
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	font-family: var(--font-sans);
+}
+
+.ann-pop-trash {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: #e5484d;
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.ann-pop-trash:hover {
+	background: rgba(229, 72, 77, 0.12);
+}
+
+.ann-pop-color-picker {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	background: none;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.ann-pop-color-picker::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+.ann-pop-color-picker::-webkit-color-swatch {
+	border: none;
+	border-radius: 3px;
+}
+
+.ann-pop-hex-wrap {
+	display: flex;
+	align-items: center;
+	gap: 1px;
+	background: color-mix(in srgb, var(--fg) 6%, transparent);
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	padding: 2px 5px;
+	font-size: 11px;
+	color: var(--muted);
+}
+
+.ann-pop-hex {
+	width: 52px;
+	border: none;
+	background: transparent;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--fg);
+	outline: none;
+}
+
+.ann-pop-font {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+	transition: color 0.1s, background 0.1s;
+	font-family: var(--font-sans);
+}
+
+.ann-pop-font:hover {
+	color: var(--fg);
+	background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.ann-pop-font-up {
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.ann-pop-font-down {
+	font-size: 11px;
+}
+
+/* Cursor overrides when draw mode is active */
+#panel-viewer.draw-rect,
+#panel-viewer.draw-line {
+	cursor: crosshair;
+}
+
+#panel-viewer.draw-text {
+	cursor: text;
 }
 
 .tile-url-input::placeholder {

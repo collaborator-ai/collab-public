@@ -25,9 +25,16 @@ interface TileState {
   zIndex: number;
 }
 
+type AnnotationState =
+  | { id: string; type: "rect"; x: number; y: number; width: number; height: number; color: string }
+  | { id: string; type: "text"; x: number; y: number; content: string; fontSize: number; color: string }
+  | { id: string; type: "line"; mode: "free"; x1: number; y1: number; x2: number; y2: number; color: string }
+  | { id: string; type: "line"; mode: "connected"; fromTileId: string; toTileId: string; color: string };
+
 interface CanvasState {
   version: 1;
   tiles: TileState[];
+  annotations?: AnnotationState[];
   viewport: {
     centerX: number;
     centerY: number;

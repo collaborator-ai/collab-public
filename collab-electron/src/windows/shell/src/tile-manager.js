@@ -29,6 +29,11 @@ export function createTileManager({
 	onTileFocused,
 	onTileDblClick,
 	onReposition,
+	onAfterTilesMoved,
+	onTileRemoved,
+	onGroupDragStart,
+	onGroupDragMove,
+	onGroupDragEnd,
 }) {
 	/** @type {Map<string, {container: HTMLElement, contentArea: HTMLElement, titleText: HTMLElement, webview?: HTMLElement}>} */
 	const tileDOMs = new Map();
@@ -102,6 +107,7 @@ export function createTileManager({
 			);
 		}
 		onReposition?.();
+		onAfterTilesMoved?.();
 	}
 
 	// -- Selection visuals --
@@ -572,6 +578,10 @@ export function createTileManager({
 			onFocus: (id, e) => focusCanvasTile(id, e),
 			isSpaceHeld,
 			contentOverlay: dom.contentOverlay,
+			isTileInSelection: () => isSelected(tile.id),
+			onGroupDragStart,
+			onGroupDragMove,
+			onGroupDragEnd,
 		});
 		attachResize(
 			dom.container, tile, viewport,
@@ -616,6 +626,7 @@ export function createTileManager({
 			}
 		}
 		removeTile(id);
+		onTileRemoved?.(id);
 		onReposition?.();
 		saveCanvasImmediate();
 	}
