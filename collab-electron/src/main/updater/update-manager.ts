@@ -52,6 +52,7 @@ class UpdateManager {
   private errorResetTimeout: NodeJS.Timeout | null = null;
   private checkInterval: NodeJS.Timeout | null = null;
   private onBeforeQuit: (() => Promise<void>) | null = null;
+  private allowPrerelease = false;
 
   private shouldIgnoreMissingReleaseMetadataError(message: string): boolean {
     if (!isMissingReleaseMetadataError(message)) {
@@ -61,12 +62,14 @@ class UpdateManager {
     return true;
   }
 
-  init(opts?: { onBeforeQuit?: () => Promise<void> }): void {
+  init(opts?: { onBeforeQuit?: () => Promise<void>; allowPrerelease?: boolean }): void {
     if (this.initialized) return;
     this.onBeforeQuit = opts?.onBeforeQuit ?? null;
+    this.allowPrerelease = opts?.allowPrerelease ?? false;
 
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.allowPrerelease = this.allowPrerelease;
 
     // Per-platform/arch update channels so each build gets its own yml file.
     // Mac: latest-arm64-mac.yml / latest-x64-mac.yml
@@ -212,6 +215,16 @@ class UpdateManager {
     autoUpdater.quitAndInstall();
   }
 
+  setAllowPrerelease(allow: boolean): void {
+    this.allowPrerelease = allow;
+    autoUpdater.allowPrerelease = allow;
+    // Reset stale update state so the new channel is evaluated fresh.
+    if (this.state.status === "available" || this.state.status === "error") {
+      this.setState({ status: "idle", error: undefined, version: undefined });
+    }
+    void this.checkForUpdates();
+  }
+
   getState(): UpdateState {
     return { ...this.state };
   }
@@ -277,5 +290,10 @@ export function setupUpdateIPC(): void {
 
   ipcMain.on("update:install", async () => {
     await updateManager.install();
+  });
+
+  ipcMain.handle("update:setChannel", (_event, channel: string) => {
+    updateManager.setAllowPrerelease(channel === "early-access");
+    return updateManager.getState();
   });
 }

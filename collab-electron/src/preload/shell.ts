@@ -143,6 +143,7 @@ contextBridge.exposeInMainWorld("shellApi", {
   updateCheck: () => ipcRenderer.invoke("update:check"),
   updateDownload: () => ipcRenderer.invoke("update:download"),
   updateInstall: () => ipcRenderer.send("update:install"),
+  updateSetChannel: (channel: string) => ipcRenderer.invoke("update:setChannel", channel),
   onUpdateStatus: (cb: (state: unknown) => void) => {
     const handler = (_event: unknown, state: unknown) => cb(state);
     ipcRenderer.on("update:status", handler);

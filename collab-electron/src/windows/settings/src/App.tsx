@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Faders,
   GearSix,
   Keyboard,
   Palette,
@@ -25,6 +26,7 @@ interface SettingsApi {
   getAgents: () => Promise<AgentStatus[]>;
   installSkill: (agentId: string) => Promise<{ ok: boolean }>;
   uninstallSkill: (agentId: string) => Promise<{ ok: boolean }>;
+  updateSetChannel: (channel: string) => Promise<unknown>;
   close: () => void;
 }
 
@@ -171,6 +173,65 @@ function ThemeToggle({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+type UpdateChannel = "default" | "early-access";
+
+function GeneralPane() {
+  const [updateChannel, setUpdateChannel] = useState<UpdateChannel>("default");
+
+  useEffect(() => {
+    api.getPref("updateChannel")
+      .then((v) => {
+        if (v === "early-access") setUpdateChannel("early-access");
+        else setUpdateChannel("default");
+      })
+      .catch(() => { });
+  }, []);
+
+  async function handleUpdateChannelChange(channel: UpdateChannel) {
+    setUpdateChannel(channel);
+    await api.setPref("updateChannel", channel);
+    await api.updateSetChannel(channel);
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold">General</h2>
+        <p className="text-sm text-muted-foreground">
+          App-wide preferences.
+        </p>
+      </div>
+
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">Update Channel</p>
+          <p className="text-xs text-muted-foreground" style={{ maxWidth: 240 }}>
+            By default, get notified for stable updates only. Early Access
+            builds may be unstable for production work.
+          </p>
+        </div>
+        <select
+          value={updateChannel}
+          onChange={(e) => { void handleUpdateChannelChange(e.target.value as UpdateChannel); }}
+          className="shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium cursor-pointer appearance-none"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--foreground) 8%, transparent)",
+            color: "var(--foreground)",
+            border: "1px solid color-mix(in srgb, var(--foreground) 20%, transparent)",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 8px center",
+            paddingRight: "28px",
+          }}
+        >
+          <option value="default">Default</option>
+          <option value="early-access">Early Access</option>
+        </select>
+      </div>
     </div>
   );
 }
@@ -595,13 +656,14 @@ function IntegrationsPane() {
   );
 }
 
-type Pane = "appearance" | "terminal" | "integrations" | "controls";
+type Pane = "general" | "appearance" | "terminal" | "integrations" | "controls";
 
 const NAV_ITEMS: {
   id: Pane;
   label: string;
   icon: typeof Palette;
 }[] = [
+    { id: "general", label: "General", icon: Faders },
     { id: "appearance", label: "Appearance", icon: Palette },
     { id: "terminal", label: "Terminal", icon: Terminal },
     { id: "integrations", label: "Integrations", icon: PuzzlePiece },
@@ -643,7 +705,7 @@ function CloseButton({ onClick }: { onClick: () => void }) {
 
 export default function App() {
   const [activePane, setActivePane] =
-    useState<Pane>("appearance");
+    useState<Pane>("general");
   const [appVersion, setAppVersion] = useState("");
   const paneRef =
     useRef<HTMLDivElement>(null);
@@ -726,6 +788,7 @@ export default function App() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
+        {activePane === "general" && <GeneralPane />}
         {activePane === "appearance" && <AppearancePane />}
         {activePane === "terminal" && <TerminalPane />}
         {activePane === "integrations" && <IntegrationsPane />}

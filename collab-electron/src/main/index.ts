@@ -827,6 +827,7 @@ app.whenReady().then(async () => {
   setupUpdateIPC();
   updateManager.init({
     onBeforeQuit: () => shutdownBackgroundServices(),
+    allowPrerelease: getPref(config, "updateChannel") === "early-access",
   });
 
   try {
