@@ -109,7 +109,7 @@ export default function App() {
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
 		const tp = params.get("tilePath");
-		if (tp) {
+		if (tp && tp !== "undefined" && tp !== "null") {
 			setSelectedPath(tp);
 		}
 	}, []);
