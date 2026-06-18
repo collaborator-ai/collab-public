@@ -4,7 +4,7 @@ import { normalizeWindowsPath, resolvePackageBin } from "./local-bin.mjs";
 const [, , packageName, ...args] = process.argv;
 
 if (!packageName) {
-  console.error("Usage: node scripts/run-local-bin.mjs <package-name> [args...]");
+  console.error("Usage: node scripts/shared/run-local-bin.mjs <package-name> [args...]");
   process.exit(1);
 }
 

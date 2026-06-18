@@ -511,6 +511,16 @@ function createWindow(): void {
       isMaximized: mainWindow.isMaximized(),
     });
   });
+  mainWindow.webContents.on("did-finish-load", () => {
+    sendLoadingDone();
+    if (pendingFilePath) {
+      mainWindow!.webContents.send(
+        "shell:forward", "viewer", "file-selected", pendingFilePath,
+      );
+      pendingFilePath = null;
+    }
+  });
+
   mainWindow.loadURL(getRendererURL("shell"));
 
   setMainWindow(mainWindow);
@@ -842,16 +852,6 @@ app.whenReady().then(async () => {
 
   initMainAnalytics();
   trackEvent("app_launched");
-
-  mainWindow!.webContents.on("did-finish-load", () => {
-    sendLoadingDone();
-    if (pendingFilePath) {
-      mainWindow!.webContents.send(
-        "shell:forward", "viewer", "file-selected", pendingFilePath,
-      );
-      pendingFilePath = null;
-    }
-  });
 
   registerMethod("ping", () => ({ pong: true }), {
     description: "Health check — returns {pong: true}",

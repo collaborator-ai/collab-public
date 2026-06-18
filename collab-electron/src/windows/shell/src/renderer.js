@@ -1,3 +1,4 @@
+import "./shell-dev-shim.js";
 import "./shell.css";
 import "./tooltip.js";
 import {

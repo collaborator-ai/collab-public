@@ -9,17 +9,19 @@
 	],
 	"main": "out/main/index.js",
 	"scripts": {
-		"dev": "bun ./scripts/dev.mjs",
-		"build": "node ./scripts/run-local-bin.mjs electron-vite build",
-		"preview": "node ./scripts/run-local-bin.mjs electron-vite preview",
-		"clean": "bun ./scripts/clean.mjs",
-		"clean:deep": "bun ./scripts/clean.mjs --deep",
-		"package": "bun ./scripts/package.mjs",
-		"package:unsigned": "bun ./scripts/package.mjs --no-sign",
-		"release": "bun ./scripts/package.mjs --publish",
+		"dev": "bun ./scripts/dev/dev.mjs",
+		"build": "bun ./scripts/shared/run-local-bin.mjs electron-vite build",
+		"preview": "bun ./scripts/shared/run-local-bin.mjs electron-vite preview",
+		"preview:start": "node ./scripts/preview/start.mjs",
+		"preview:stop": "node ./scripts/preview/stop.mjs",
+		"clean": "bun ./scripts/maintenance/clean.mjs",
+		"clean:deep": "bun ./scripts/maintenance/clean.mjs --deep",
+		"package": "bun ./scripts/build/package.mjs",
+		"package:unsigned": "bun ./scripts/build/package.mjs --no-sign",
+		"release": "bun ./scripts/build/package.mjs --publish",
 		"test": "bun test",
 		"test:updater": "bun test src/main/updater/github-release-fetcher.test.ts && bun test src/main/updater/downloader.test.ts && bun test src/main/updater/update-manager.test.ts",
-		"postinstall": "node scripts/postinstall.mjs"
+		"postinstall": "node scripts/install/postinstall.mjs"
 	},
 	"build": {
 		"appId": "com.collaborator.desktop",
@@ -49,8 +51,8 @@
 			"node_modules/@img/sharp-libvips-linux-x64/**/*",
 			"node_modules/@img/sharp-libvips-linuxmusl-x64/**/*"
 		],
-		"afterSign": "scripts/notarize.cjs",
-		"afterAllArtifactBuild": "scripts/fix-artifacts.cjs",
+		"afterSign": "scripts/build/notarize.cjs",
+		"afterAllArtifactBuild": "scripts/build/fix-artifacts.cjs",
 		"extraResources": [
 			{
 				"from": "vendor/tmux/tmux",

@@ -22,7 +22,7 @@ const child = process.platform === "win32"
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        join(repoDir, "scripts", "dev.ps1"),
+        join(repoDir, "scripts", "dev", "dev.ps1"),
       ],
       {
         stdio: "inherit",

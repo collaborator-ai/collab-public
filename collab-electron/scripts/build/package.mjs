@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { normalizeWindowsPath, resolvePackageBin } from "./local-bin.mjs";
+import { normalizeWindowsPath, resolvePackageBin } from "../shared/local-bin.mjs";
 
 const args = process.argv.slice(2);
 const builderArgs = ["--publish", "never"];
@@ -104,7 +104,7 @@ if (process.platform === "win32") {
   // Use an afterPack hook to install the correct-arch prebuilds into the
   // staged app directory.  We cannot copy them into the live node_modules
   // because the persistent PTY sidecar keeps conpty.node locked (EBUSY).
-  builderArgs.push("-c.afterPack=scripts/after-pack-pty.cjs");
+  builderArgs.push("-c.afterPack=scripts/build/after-pack-pty.cjs");
 }
 
 // electron-builder's legacy Linux AppImage helper writes progress logs to
@@ -170,7 +170,7 @@ if (process.platform !== "win32") {
 // type-mismatch errors when the release already exists (e.g. one platform
 // created it as a pre-release and another tries to publish as draft).
 if (shouldPublish) {
-  const uploadArgs = [join(cwd, "scripts", "upload-to-github.cjs")];
+  const uploadArgs = [join(cwd, "scripts", "build", "upload-to-github.cjs")];
   // Forward --arch so the upload script only publishes the built architectures.
   uploadArgs.push("--arch", builtArches.join(","));
   run(process.execPath, uploadArgs);

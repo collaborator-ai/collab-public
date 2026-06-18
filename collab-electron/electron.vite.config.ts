@@ -75,6 +75,7 @@ export default defineConfig({
       outDir: resolve(__dirname, outDir, "renderer"),
       rollupOptions: {
         input: {
+          index: resolve(__dirname, "src/windows/index.html"),
           nav: resolve(__dirname, "src/windows/nav/index.html"),
           viewer: resolve(__dirname, "src/windows/viewer/index.html"),
           terminal: resolve(__dirname, "src/windows/terminal/index.html"),
