@@ -158,8 +158,6 @@ class UpdateManager {
         CHECK_INTERVAL_MS,
       );
       powerMonitor.on("resume", () => this.checkForUpdates());
-    } else {
-      autoUpdater.forceDevUpdateConfig = true;
     }
 
     this.initialized = true;
