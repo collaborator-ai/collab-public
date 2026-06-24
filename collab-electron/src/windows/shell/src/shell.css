@@ -242,41 +242,6 @@ body.platform-win {
 	padding-top: calc(var(--toolbar-height) + 4px);
 }
 
-#sidebar-mode-control {
-	display: flex;
-	flex: 1;
-	background: transparent;
-	padding: 0;
-	gap: 0;
-	border-bottom: 1px solid var(--border);
-	-webkit-app-region: no-drag;
-}
-
-.mode-btn {
-	flex: 1;
-	text-align: center;
-	padding: 4px 0 8px;
-	border: none;
-	border-bottom: 2px solid transparent;
-	margin-bottom: -1px;
-	background: transparent;
-	font-size: 0.8rem;
-	font-weight: 400;
-	color: var(--muted);
-	cursor: pointer;
-	transition: color 0.1s ease, border-color 0.1s ease;
-}
-
-.mode-btn:hover {
-	color: var(--fg);
-}
-
-.mode-btn.active {
-	border-bottom-color: var(--fg);
-	color: var(--fg);
-	font-weight: 500;
-}
-
 #new-tile-btn {
 	position: absolute;
 	top: 10px;

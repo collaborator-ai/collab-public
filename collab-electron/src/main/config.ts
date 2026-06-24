@@ -22,6 +22,7 @@ export type TerminalTarget =
   | "auto"
   | "powershell"
   | "shell"
+  | "claude"
   | `wsl:${string}`;
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -108,10 +109,8 @@ export function setPref(
 export type TerminalMode = "tmux" | "sidecar";
 
 export function getTerminalMode(): TerminalMode {
-  if (process.platform !== "darwin") return "sidecar";
-  const config = loadConfig();
-  const mode = getPref(config, "terminalMode");
-  if (mode === "sidecar" || mode === "tmux") return mode;
+  // The sidecar is the only supported backend. tmux remains in the tree as
+  // dormant code pending removal, but nothing routes through it.
   return "sidecar";
 }
 
@@ -119,6 +118,7 @@ export function isTerminalTarget(value: unknown): value is TerminalTarget {
   return value === "auto"
     || value === "powershell"
     || value === "shell"
+    || value === "claude"
     || (typeof value === "string" && value.startsWith("wsl:"));
 }
 

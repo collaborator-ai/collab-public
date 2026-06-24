@@ -32,14 +32,15 @@ function App() {
     const isRestored = params.get("restored") === "1";
     const cwd = params.get("cwd") || undefined;
     const tileId = params.get("tileId") || undefined;
+    const target = params.get("target") || undefined;
 
     const createFreshSession = (
-      target?: string,
+      sessionTarget: string | undefined = target,
       nextCwd?: string,
     ) => {
       const est = estimateTermSize();
       window.api
-        .ptyCreate(nextCwd ?? cwd, est.cols, est.rows, target, tileId)
+        .ptyCreate(nextCwd ?? cwd, est.cols, est.rows, sessionTarget, tileId)
         .then((result) => {
           setSessionId(result.sessionId);
           window.api.notifyPtySessionId(

@@ -64,6 +64,7 @@ export function createTileManager({
 				folderPath: t.folderPath,
 				workspacePath: t.workspacePath,
 				ptySessionId: t.ptySessionId,
+				target: t.target,
 				url: t.url,
 				zIndex: t.zIndex,
 				userTitle: t.userTitle,
@@ -230,8 +231,9 @@ export function createTileManager({
 		if (tile.ptySessionId) {
 			params.set("sessionId", tile.ptySessionId);
 			params.set("restored", "1");
-		} else if (tile.cwd) {
-			params.set("cwd", tile.cwd);
+		} else {
+			if (tile.cwd) params.set("cwd", tile.cwd);
+			if (tile.target) params.set("target", tile.target);
 		}
 		const qs = params.toString();
 		wv.setAttribute(
@@ -506,6 +508,7 @@ export function createTileManager({
 				const gap = 40;
 				const newTile = createCanvasTile("term", t.x + t.width + gap, t.y, {
 					cwd: t.cwd,
+					target: t.target,
 					width: t.width,
 					height: t.height,
 				});
@@ -713,6 +716,7 @@ export function createTileManager({
 						height: saved.height,
 						zIndex: saved.zIndex,
 						ptySessionId: saved.ptySessionId,
+						target: saved.target,
 						userTitle: saved.userTitle,
 						autoTitle: saved.autoTitle,
 					},

@@ -138,6 +138,17 @@ export function resolveTerminalTarget(
 ): ResolvedTerminalTarget {
   const initialCwd = cwdHostPath || os.homedir();
 
+  if (preferredTarget === "claude") {
+    return {
+      target: "claude",
+      command: "claude",
+      args: ["--dangerously-skip-permissions"],
+      displayName: "Claude Code",
+      cwd: initialCwd,
+      cwdHostPath: initialCwd,
+    };
+  }
+
   if (process.platform === "win32") {
     const target = resolveWindowsAutoTarget(
       preferredTarget,
