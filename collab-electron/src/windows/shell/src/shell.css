@@ -944,6 +944,29 @@ body.platform-win {
 	overflow: hidden;
 }
 
+/* xterm paints the viewport with the (opaque-interpreted) theme background;
+   force it transparent so the translucent tile and canvas show through. */
+.terminal-embed-container .xterm-viewport {
+	background: transparent !important;
+}
+
+.terminal-embed-container .xterm-decoration-overview-ruler {
+	display: none !important;
+}
+
+.terminal-embed-container .xterm-viewport::-webkit-scrollbar {
+	width: 7px;
+}
+
+.terminal-embed-container .xterm-viewport::-webkit-scrollbar-thumb {
+	background: rgba(121, 121, 121, 0.4);
+	border-radius: 4px;
+}
+
+.terminal-embed-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
+	background: rgba(121, 121, 121, 0.7);
+}
+
 .canvas-tile[data-tile-type="term"] {
 	background: rgba(250, 250, 250, 0.5);
 }
