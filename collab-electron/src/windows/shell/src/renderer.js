@@ -839,14 +839,21 @@ async function init() {
 
 		const selected = await window.shellApi.showContextMenu([
 			{ id: "new-claude", label: "New Claude terminal tile" },
+			{ id: "new-codex", label: "New Codex terminal tile" },
+			{ id: "new-opencode", label: "New opencode terminal tile" },
 			{ id: "new-terminal", label: "New terminal tile" },
 			{ id: "new-browser", label: "New browser tile" },
 		]);
 
-		if (selected === "new-terminal" || selected === "new-claude") {
+		if (
+			selected === "new-terminal" || selected === "new-claude"
+			|| selected === "new-codex" || selected === "new-opencode"
+		) {
 			const cwd = getTerminalCwd();
 			const size = getTerminalSize();
-			const target = selected === "new-claude" ? "claude" : undefined;
+			const target = selected === "new-claude" ? "claude"
+				: selected === "new-codex" ? "codex"
+				: selected === "new-opencode" ? "opencode" : undefined;
 			const tile = tileManager.createCanvasTile(
 				"term", cx, cy, { cwd, target, ...size },
 			);
@@ -1491,9 +1498,12 @@ async function init() {
 		const selected = await window.shellApi.showContextMenu([
 			{ id: "new-terminal", label: "New terminal tile" },
 			{ id: "new-claude", label: "New Claude terminal tile" },
+			{ id: "new-codex", label: "New Codex terminal tile" },
+			{ id: "new-opencode", label: "New opencode terminal tile" },
 			{ id: "new-browser", label: "New browser tile" },
 		]);
 		const type = selected === "new-terminal" || selected === "new-claude"
+			|| selected === "new-codex" || selected === "new-opencode"
 			? "term"
 			: selected === "new-browser" ? "browser" : null;
 		if (!type) return;
@@ -1503,7 +1513,9 @@ async function init() {
 		const cy = (rect.height / 2 - viewportState.panY) / viewportState.zoom - size.height / 2;
 		if (type === "term") {
 			const cwd = getTerminalCwd();
-			const target = selected === "new-claude" ? "claude" : undefined;
+			const target = selected === "new-claude" ? "claude"
+				: selected === "new-codex" ? "codex"
+				: selected === "new-opencode" ? "opencode" : undefined;
 			const tile = tileManager.createCanvasTile("term", cx, cy, { cwd, target });
 			tileManager.spawnTerminalWebview(tile, true);
 		} else {

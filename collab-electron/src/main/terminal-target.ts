@@ -9,6 +9,31 @@ export interface TerminalTargetOption {
   isDefault?: boolean;
 }
 
+interface AgentTarget {
+  command: string;
+  args: string[];
+  displayName: string;
+}
+
+/** CLI agents a terminal can launch directly instead of a shell. */
+const AGENT_TARGETS: Record<string, AgentTarget> = {
+  claude: {
+    command: "claude",
+    args: ["--dangerously-skip-permissions"],
+    displayName: "Claude Code",
+  },
+  codex: {
+    command: "codex",
+    args: ["--dangerously-bypass-approvals-and-sandbox"],
+    displayName: "Codex",
+  },
+  opencode: {
+    command: "opencode",
+    args: [],
+    displayName: "opencode",
+  },
+};
+
 export interface ResolvedTerminalTarget {
   target: TerminalTarget;
   command: string;
@@ -138,12 +163,13 @@ export function resolveTerminalTarget(
 ): ResolvedTerminalTarget {
   const initialCwd = cwdHostPath || os.homedir();
 
-  if (preferredTarget === "claude") {
+  const agent = AGENT_TARGETS[preferredTarget];
+  if (agent) {
     return {
-      target: "claude",
-      command: "claude",
-      args: ["--dangerously-skip-permissions"],
-      displayName: "Claude Code",
+      target: preferredTarget,
+      command: agent.command,
+      args: agent.args,
+      displayName: agent.displayName,
       cwd: initialCwd,
       cwdHostPath: initialCwd,
     };

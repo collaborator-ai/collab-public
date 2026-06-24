@@ -23,6 +23,8 @@ export type TerminalTarget =
   | "powershell"
   | "shell"
   | "claude"
+  | "codex"
+  | "opencode"
   | `wsl:${string}`;
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -119,6 +121,8 @@ export function isTerminalTarget(value: unknown): value is TerminalTarget {
     || value === "powershell"
     || value === "shell"
     || value === "claude"
+    || value === "codex"
+    || value === "opencode"
     || (typeof value === "string" && value.startsWith("wsl:"));
 }
 
