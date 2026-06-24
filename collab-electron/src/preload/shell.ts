@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld("shellApi", {
   setPref: (key: string, value: unknown): Promise<void> =>
     ipcRenderer.invoke("pref:set", key, value),
 
+  getInProcessTerminals: (): Promise<boolean> =>
+    ipcRenderer.invoke("shell:get-in-process-terminals"),
+
   onForwardToWebview: (
     cb: (target: string, channel: string, ...args: unknown[]) => void,
   ) => {
@@ -233,8 +236,44 @@ contextBridge.exposeInMainWorld("shellApi", {
   ptyKillSession: (sessionId: string): Promise<void> =>
     ipcRenderer.invoke("pty:kill", { sessionId }),
 
+  ptyCreate: (
+    cwd?: string,
+    cols?: number,
+    rows?: number,
+    target?: string,
+  ): Promise<{ sessionId: string }> =>
+    ipcRenderer.invoke("pty:create", { cwd, cols, rows, target }),
+
+  ptyReconnect: (
+    sessionId: string,
+    cols: number,
+    rows: number,
+  ): Promise<{ scrollback: string; mode: "tmux" | "sidecar" }> =>
+    ipcRenderer.invoke("pty:reconnect", { sessionId, cols, rows }),
+
+  ptyResize: (
+    sessionId: string,
+    cols: number,
+    rows: number,
+  ): Promise<void> =>
+    ipcRenderer.invoke("pty:resize", { sessionId, cols, rows }),
+
+  ptySendRawKeys: (sessionId: string, data: string): Promise<void> =>
+    ipcRenderer.invoke("pty:send-raw-keys", { sessionId, data }),
+
   ptyWrite: (sessionId: string, data: string): void => {
     ipcRenderer.send("pty:write", { sessionId, data });
+  },
+
+  onPtyData: (
+    callback: (sessionId: string, data: Uint8Array) => void,
+  ) => {
+    const handler = (
+      _event: unknown,
+      payload: { sessionId: string; data: Uint8Array },
+    ) => callback(payload.sessionId, payload.data);
+    ipcRenderer.on("pty:data", handler);
+    return () => ipcRenderer.removeListener("pty:data", handler);
   },
 
   ptyCapture: (

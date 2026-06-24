@@ -817,7 +817,7 @@ async function init() {
 		const tile = tileManager.createCanvasTile(
 			"term", cx, cy, { cwd, target: "claude", ...size },
 		);
-		tileManager.spawnTerminalWebview(tile, true);
+		tileManager.spawnTerminal(tile, true);
 		tileManager.saveCanvasImmediate();
 		minimap.update();
 	});
@@ -857,7 +857,7 @@ async function init() {
 			const tile = tileManager.createCanvasTile(
 				"term", cx, cy, { cwd, target, ...size },
 			);
-			tileManager.spawnTerminalWebview(tile, true);
+			tileManager.spawnTerminal(tile, true);
 			tileManager.saveCanvasImmediate();
 			minimap.update();
 		} else if (selected === "new-browser") {
@@ -973,7 +973,7 @@ async function init() {
 	// -- Space+click and middle-click pan --
 
 	window.addEventListener("keydown", (e) => {
-		if (e.code === "Space" && !e.target.closest?.("webview") && !e.target.matches?.("input, textarea")) {
+		if (e.code === "Space" && !e.target.closest?.("webview") && !e.target.closest?.(".terminal-embed-container") && !e.target.matches?.("input, textarea")) {
 			e.preventDefault();
 			if (!e.repeat && !spaceHeld) {
 				spaceHeld = true;
@@ -1074,7 +1074,7 @@ async function init() {
 			const tile = tileManager.createCanvasTile(
 				"term", cx, cy, { cwd, ...size },
 			);
-			tileManager.spawnTerminalWebview(tile, true);
+			tileManager.spawnTerminal(tile, true);
 			tileManager.saveCanvasImmediate();
 			minimap.update();
 		} else if (action === "close-tile") {
@@ -1218,7 +1218,7 @@ async function init() {
 					const tile = tileManager.createCanvasTile(
 						"term", cx, cy, { cwd, ...size },
 					);
-					tileManager.spawnTerminalWebview(tile, true);
+					tileManager.spawnTerminal(tile, true);
 					tileManager.saveCanvasImmediate();
 					minimap.update();
 				}
@@ -1314,7 +1314,7 @@ async function init() {
 		const tile = tileManager.createCanvasTile(
 			"term", cx, cy, { cwd, ...size },
 		);
-		tileManager.spawnTerminalWebview(tile, true);
+		tileManager.spawnTerminal(tile, true);
 		tileManager.saveCanvasImmediate();
 		minimap.update();
 	}
@@ -1517,7 +1517,7 @@ async function init() {
 				: selected === "new-codex" ? "codex"
 				: selected === "new-opencode" ? "opencode" : undefined;
 			const tile = tileManager.createCanvasTile("term", cx, cy, { cwd, target });
-			tileManager.spawnTerminalWebview(tile, true);
+			tileManager.spawnTerminal(tile, true);
 		} else {
 			const tile = tileManager.createCanvasTile("browser", cx, cy);
 			tileManager.spawnBrowserWebview(tile, true);
@@ -1673,6 +1673,10 @@ async function init() {
 			}
 		});
 	}
+
+	// -- Initialize in-process terminal mode (before tile restore) --
+
+	await tileManager.initInProcessTerminals();
 
 	// -- Restore canvas state --
 

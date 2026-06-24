@@ -12,6 +12,11 @@ import { toCollabFileUrl } from "@collab/shared/collab-file-url";
 import { workspaceRootMatch } from "@collab/shared/path-utils";
 import { attachDrag, attachResize } from "./tile-interactions.js";
 import { findAutoPlacement } from "./canvas-rpc.js";
+import {
+	createTerminal, getTerminal, disposeTerminal, initPtyDataDispatch,
+} from "./terminal-embed.js";
+
+let inProcessTerminals = false;
 
 /**
  * Tile lifecycle manager: creation, deletion, persistence, webview
@@ -126,9 +131,15 @@ export function createTileManager({
 	function blurCanvasTileGuest(id = focusedTileId) {
 		if (!id) return;
 		const dom = tileDOMs.get(id);
-		if (!dom?.webview) return;
-		try { dom.webview.send("shell-blur"); } catch { /* noop */ }
-		try { dom.webview.blur(); } catch { /* noop */ }
+		if (!dom) return;
+		if (dom.terminalContainer) {
+			const tile = getTile(id);
+			const handle = tile?.ptySessionId ? getTerminal(tile.ptySessionId) : null;
+			if (handle) handle.blur();
+		} else if (dom.webview) {
+			try { dom.webview.send("shell-blur"); } catch { /* noop */ }
+			try { dom.webview.blur(); } catch { /* noop */ }
+		}
 	}
 
 	function forwardClickToWebview(webview, mouseEvent) {
@@ -166,7 +177,20 @@ export function createTileManager({
 			repositionAllTiles();
 		}
 		const dom = tileDOMs.get(id);
-		if (dom && dom.webview) {
+		if (dom && dom.terminalContainer) {
+			if (focusedTileId && focusedTileId !== id) {
+				blurCanvasTileGuest(focusedTileId);
+			}
+			focusedTileId = id;
+			if (onTileFocused) {
+				onTileFocused(tile);
+			}
+			clearTileFocusRing();
+			dom.container.classList.add("tile-focused");
+			const handle = tile?.ptySessionId ? getTerminal(tile.ptySessionId) : null;
+			if (handle) handle.focus();
+			onNoteSurfaceFocus("canvas-tile");
+		} else if (dom && dom.webview) {
 			if (focusedTileId && focusedTileId !== id) {
 				blurCanvasTileGuest(focusedTileId);
 			}
@@ -277,6 +301,65 @@ export function createTileManager({
 				}
 			}
 		});
+	}
+
+	async function spawnTerminalDiv(tile, autoFocus = false) {
+		const dom = tileDOMs.get(tile.id);
+		if (!dom) return;
+
+		const container = document.createElement("div");
+		container.className = "terminal-embed-container";
+		container.style.width = "100%";
+		container.style.height = "100%";
+		dom.contentArea.appendChild(container);
+		dom.terminalContainer = container;
+
+		let sessionId = tile.ptySessionId;
+		let scrollbackData = null;
+		let mode = "direct";
+		let restored = false;
+
+		if (sessionId) {
+			try {
+				const result = await window.shellApi.ptyReconnect(sessionId, 80, 24);
+				scrollbackData = result.scrollback;
+				mode = result.mode || "direct";
+				restored = true;
+			} catch {
+				sessionId = null;
+			}
+		}
+
+		if (!sessionId) {
+			const result = await window.shellApi.ptyCreate(tile.cwd);
+			sessionId = result.sessionId;
+			tile.ptySessionId = sessionId;
+			saveCanvasDebounced();
+		}
+
+		const handle = await createTerminal(container, sessionId, {
+			scrollbackData, mode, restored,
+		});
+
+		if (onTerminalSessionCreated) {
+			onTerminalSessionCreated(tile);
+		}
+
+		if (autoFocus) {
+			handle.focus();
+		}
+	}
+
+	function spawnTerminal(tile, autoFocus = false) {
+		if (inProcessTerminals) {
+			spawnTerminalDiv(tile, autoFocus).catch((err) => {
+				console.error(
+					"[tile-manager] Failed to spawn in-process terminal:", err,
+				);
+			});
+		} else {
+			spawnTerminalWebview(tile, autoFocus);
+		}
 	}
 
 	function spawnGraphWebview(tile) {
@@ -601,12 +684,15 @@ export function createTileManager({
 
 	function closeCanvasTile(id) {
 		const dom = tileDOMs.get(id);
+		const tile = getTile(id);
+		if (dom && dom.terminalContainer && tile?.ptySessionId) {
+			disposeTerminal(tile.ptySessionId);
+		}
 		if (dom) {
 			dom.container.remove();
 			tileDOMs.delete(id);
 		}
 		deselectTile(id);
-		const tile = getTile(id);
 		if (tile) {
 			window.shellApi.trackEvent(
 				"tile_closed", { type: tile.type },
@@ -721,7 +807,7 @@ export function createTileManager({
 						autoTitle: saved.autoTitle,
 					},
 				);
-				spawnTerminalWebview(tile);
+				spawnTerminal(tile);
 			} else if (saved.type === "graph" && saved.folderPath) {
 				const tile = createCanvasTile(
 					"graph", cx, cy, {
@@ -825,7 +911,19 @@ export function createTileManager({
 		saveCanvasImmediate();
 	}
 
+	async function initInProcessTerminals() {
+		try {
+			inProcessTerminals = await window.shellApi.getInProcessTerminals();
+		} catch {
+			inProcessTerminals = false;
+		}
+		if (inProcessTerminals) {
+			initPtyDataDispatch();
+		}
+	}
+
 	return {
+		initInProcessTerminals,
 		createCanvasTile,
 		closeCanvasTile,
 		focusCanvasTile,
@@ -833,6 +931,7 @@ export function createTileManager({
 		clearTileFocusRing,
 		repositionAllTiles,
 		syncSelectionVisuals,
+		spawnTerminal,
 		spawnTerminalWebview,
 		spawnGraphWebview,
 		spawnBrowserWebview,

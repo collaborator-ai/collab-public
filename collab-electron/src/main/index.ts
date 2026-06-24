@@ -23,6 +23,7 @@ import {
   saveConfig,
   getPref,
   setPref,
+  getInProcessTerminals,
   type WindowState,
   type TerminalTarget,
 } from "./config";
@@ -546,6 +547,11 @@ ipcMain.handle("shell:get-view-config", () => {
     agentChat: { src: getRendererURL("agent-chat"), preload },
   };
 });
+
+ipcMain.handle(
+  "shell:get-in-process-terminals",
+  () => getInProcessTerminals(),
+);
 
 ipcMain.handle(
   "pref:get",

@@ -938,6 +938,12 @@ body.platform-win {
 	border: none;
 }
 
+.terminal-embed-container {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
 .canvas-tile[data-tile-type="term"] {
 	background: rgba(250, 250, 250, 0.5);
 }

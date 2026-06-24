@@ -131,3 +131,20 @@ export function getTerminalTarget(): TerminalTarget {
   const target = getPref(config, "terminalTarget");
   return isTerminalTarget(target) ? target : "auto";
 }
+
+function getBoolPref(key: string, defaultValue: boolean): boolean {
+  const config = loadConfig();
+  const pref = getPref(config, key);
+  if (pref === true || pref === false) return pref;
+  return defaultValue;
+}
+
+/**
+ * Whether terminal tiles render in-process (xterm.js mounted directly in the
+ * shell renderer) instead of one Chromium webview per tile. Defaults on: it
+ * removes one Chromium renderer process per terminal, trading per-tile crash
+ * isolation for a large memory reduction. Set the `inProcessTerminals` pref to
+ * false to fall back to the webview-per-tile path.
+ */
+export const getInProcessTerminals = (): boolean =>
+  getBoolPref("inProcessTerminals", true);
