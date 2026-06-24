@@ -175,6 +175,7 @@ export async function createTerminal(container, sessionId, options = {}) {
 	if (disposed) return handle;
 	lap("phase 1 start: new Terminal + open");
 
+	const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 	term = new Terminal({
 		theme: getTheme(),
 		fontFamily: 'Menlo, Monaco, "Cascadia Mono", Consolas, "Courier New", monospace',
@@ -184,6 +185,9 @@ export async function createTerminal(container, sessionId, options = {}) {
 		cursorBlink: true,
 		scrollback: INITIAL_SCROLLBACK,
 		allowProposedApi: true,
+		// The theme background is rgba(..,0); transparency lets the canvas
+		// show through instead of compositing onto solid black.
+		allowTransparency: prefersDark,
 	});
 
 	fit = new FitAddon();
@@ -312,7 +316,10 @@ export async function createTerminal(container, sessionId, options = {}) {
 
 	// Theme
 	const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-	const onThemeChange = () => { term.options.theme = getTheme(); };
+	const onThemeChange = (e) => {
+		term.options.allowTransparency = e.matches;
+		term.options.theme = getTheme();
+	};
 	mediaQuery.addEventListener("change", onThemeChange);
 	cleanups.push(() => mediaQuery.removeEventListener("change", onThemeChange));
 

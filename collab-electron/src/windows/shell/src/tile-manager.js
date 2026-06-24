@@ -331,7 +331,9 @@ export function createTileManager({
 		}
 
 		if (!sessionId) {
-			const result = await window.shellApi.ptyCreate(tile.cwd);
+			const result = await window.shellApi.ptyCreate(
+				tile.cwd, undefined, undefined, tile.target,
+			);
 			sessionId = result.sessionId;
 			tile.ptySessionId = sessionId;
 			saveCanvasDebounced();
