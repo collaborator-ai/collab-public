@@ -18,6 +18,9 @@ import {
 
 let inProcessTerminals = false;
 
+/** Terminal targets that launch a CLI agent, whose window title we trust. */
+const AGENT_TARGETS = new Set(["claude", "codex", "opencode"]);
+
 /**
  * Tile lifecycle manager: creation, deletion, persistence, webview
  * spawning, focus, selection visuals, and canvas save/restore.
@@ -72,8 +75,9 @@ export function createTileManager({
 				target: t.target,
 				url: t.url,
 				zIndex: t.zIndex,
+				cwd: t.cwd,
 				userTitle: t.userTitle,
-				autoTitle: t.autoTitle,
+				agentTitle: t.agentTitle,
 			})),
 			viewport: {
 				panX: viewportState.panX,
@@ -290,9 +294,8 @@ export function createTileManager({
 			}
 			if (event.channel === "pty-cwd-changed") {
 				const cwd = event.args[1];
-				if (cwd && cwd !== tile.autoTitle) {
+				if (cwd && cwd !== tile.cwd) {
 					tile.cwd = cwd;
-					tile.autoTitle = cwd;
 					updateTileTitle(tileDOMs.get(tile.id), tile);
 					saveCanvasDebounced();
 					if (onTerminalCwdChanged) {
@@ -341,6 +344,13 @@ export function createTileManager({
 
 		const handle = await createTerminal(container, sessionId, {
 			scrollbackData, mode, restored,
+			acceptStandardTitle: AGENT_TARGETS.has(tile.target),
+			onAgentTitle: (_sid, title) => {
+				if (tile.agentTitle === title) return;
+				tile.agentTitle = title;
+				updateTileTitle(tileDOMs.get(tile.id), tile);
+				saveCanvasDebounced();
+			},
 		});
 
 		if (onTerminalSessionCreated) {
@@ -680,6 +690,9 @@ export function createTileManager({
 			viewportState.panX, viewportState.panY,
 			viewportState.zoom,
 		);
+		// Remask the dot grid so the new (translucent) tile hides the dots
+		// behind it immediately, rather than waiting for the next pan/zoom.
+		onReposition?.();
 
 		return tile;
 	}
@@ -805,8 +818,9 @@ export function createTileManager({
 						zIndex: saved.zIndex,
 						ptySessionId: saved.ptySessionId,
 						target: saved.target,
+						cwd: saved.cwd ?? saved.autoTitle,
 						userTitle: saved.userTitle,
-						autoTitle: saved.autoTitle,
+						agentTitle: saved.agentTitle,
 					},
 				);
 				spawnTerminal(tile);

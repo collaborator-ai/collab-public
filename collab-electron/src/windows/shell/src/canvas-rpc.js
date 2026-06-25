@@ -92,7 +92,7 @@ export function createCanvasRpc({
 							cwd: t.cwd,
 							ptySessionId: t.ptySessionId,
 							userTitle: t.userTitle,
-							autoTitle: t.autoTitle,
+							agentTitle: t.agentTitle,
 							position: { x: t.x, y: t.y },
 							size: { width: t.width, height: t.height },
 							zIndex: t.zIndex,

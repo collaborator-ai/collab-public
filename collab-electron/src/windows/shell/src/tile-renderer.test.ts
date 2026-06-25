@@ -55,27 +55,28 @@ describe("getTileLabel", () => {
     expect(label.parent).toBe("");
   });
 
-  test("userTitle wins over autoTitle and cwd", () => {
+  test("userTitle wins over agentTitle and cwd", () => {
     const label = getTileLabel({
       type: "term", id: "t1",
       userTitle: "My Server",
-      autoTitle: "/Users/me/projects/app",
+      agentTitle: "Refactoring PTY status",
       cwd: "/Users/me/projects/app",
     });
     expect(label.name).toBe("My Server");
     expect(label.parent).toBe("");
   });
 
-  test("returns autoTitle split when no userTitle", () => {
+  test("agentTitle wins over cwd when no userTitle", () => {
     const label = getTileLabel({
       type: "term", id: "t1",
-      autoTitle: "/Users/me/projects/app",
+      agentTitle: "Refactoring PTY status",
+      cwd: "/Users/me/projects/app",
     });
-    expect(label.name).toBe("app");
-    expect(label.parent).toBe("/Users/me/projects/");
+    expect(label.name).toBe("Refactoring PTY status");
+    expect(label.parent).toBe("");
   });
 
-  test("falls back to cwd when no userTitle or autoTitle", () => {
+  test("falls back to cwd when no userTitle or agentTitle", () => {
     const label = getTileLabel({
       type: "term", id: "t1",
       cwd: "/Users/me/projects/fallback",
@@ -84,11 +85,21 @@ describe("getTileLabel", () => {
     expect(label.parent).toBe("/Users/me/projects/");
   });
 
-  test("empty userTitle falls through to autoTitle", () => {
+  test("empty userTitle falls through to agentTitle", () => {
     const label = getTileLabel({
       type: "term", id: "t1",
       userTitle: "",
-      autoTitle: "/Users/me/projects/app",
+      agentTitle: "Running tests",
+    });
+    expect(label.name).toBe("Running tests");
+    expect(label.parent).toBe("");
+  });
+
+  test("empty agentTitle falls through to cwd", () => {
+    const label = getTileLabel({
+      type: "term", id: "t1",
+      agentTitle: "",
+      cwd: "/Users/me/projects/app",
     });
     expect(label.name).toBe("app");
     expect(label.parent).toBe("/Users/me/projects/");

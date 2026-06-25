@@ -410,7 +410,6 @@ async function init() {
 	function syncTerminalTileMeta(tile, meta) {
 		if (!meta) return;
 		tile.cwd = meta.cwdHostPath || meta.cwd || tile.cwd;
-		tile.autoTitle = meta.cwdHostPath || meta.cwd || tile.autoTitle;
 		const dom = tileManager.getTileDOMs().get(tile.id);
 		if (dom) {
 			updateTileTitle(dom, tile);
@@ -427,7 +426,7 @@ async function init() {
 			title = label.parent
 				? label.parent + label.name
 				: label.name;
-			description = tile.cwd || tile.autoTitle || "~";
+			description = tile.cwd || "~";
 			status = tile.ptySessionId ? "running" : "idle";
 		} else if (tile.type === "browser") {
 			title = tile.url || "Browser";

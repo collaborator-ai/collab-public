@@ -12,6 +12,17 @@ const DATA_BUFFER_FLUSH_MS = 5;
 const IS_MAC = window.shellApi.getPlatform() === "darwin";
 const textEncoder = new TextEncoder();
 
+const AGENT_TITLE_MAX_LEN = 60;
+
+/** Collapse to a single clean line, strip control chars, cap length. */
+function sanitizeAgentTitle(raw) {
+	return raw
+		.replace(/[\x00-\x1f\x7f]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim()
+		.slice(0, AGENT_TITLE_MAX_LEN);
+}
+
 // Scrollback: start small to avoid a CPU spike on terminal creation, then
 // grow to the full limit once the terminal is idle and interactive.
 const INITIAL_SCROLLBACK = 1000;
@@ -54,11 +65,16 @@ const registry = new Map();
  *
  * @param {HTMLElement} container
  * @param {string} sessionId
- * @param {{ scrollbackData?: string|null, mode?: "tmux"|"sidecar"|"direct", restored?: boolean }} [options]
+ * @param {{ scrollbackData?: string|null, mode?: "tmux"|"sidecar"|"direct", restored?: boolean, onAgentTitle?: ((sessionId: string, title: string) => void)|null, acceptStandardTitle?: boolean }} [options]
  * @returns {Promise<TerminalHandle>}
  */
 export async function createTerminal(container, sessionId, options = {}) {
-	const { scrollbackData = null, restored = false } = options;
+	const {
+		scrollbackData = null,
+		restored = false,
+		onAgentTitle = null,
+		acceptStandardTitle = false,
+	} = options;
 
 	const t0 = performance.now();
 	const lap = (label) => {
@@ -214,6 +230,16 @@ export async function createTerminal(container, sessionId, options = {}) {
 	const unicode11 = new Unicode11Addon();
 	term.loadAddon(unicode11);
 	term.unicode.activeVersion = "11";
+
+	// Agent-target tiles adopt the window title the CLI emits (e.g. Claude
+	// Code's session summary), surfaced via xterm's title-change event.
+	if (onAgentTitle && acceptStandardTitle) {
+		const titleDisposable = term.onTitleChange((raw) => {
+			const title = sanitizeAgentTitle(raw);
+			if (title) onAgentTitle(sessionId, title);
+		});
+		cleanups.push(() => titleDisposable.dispose());
+	}
 
 	// Scroll isolation
 	const handleWheel = (e) => { e.stopPropagation(); };
