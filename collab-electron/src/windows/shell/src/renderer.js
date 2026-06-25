@@ -15,6 +15,7 @@ import { createWorkspaceManager } from "./workspace-manager.js";
 import { createCanvasRpc } from "./canvas-rpc.js";
 import { createTileManager } from "./tile-manager.js";
 import { updateTileTitle, getTileLabel } from "./tile-renderer.js";
+import { mountGradientBackground } from "./gradient-background.tsx";
 
 const CANVAS_DBLCLICK_SUPPRESS_MS = 500;
 const IS_WINDOWS = window.shellApi.getPlatform() === "win32";
@@ -27,6 +28,10 @@ canvasEl.tabIndex = -1;
 
 document.documentElement.classList.toggle("platform-win", IS_WINDOWS);
 document.body.classList.toggle("platform-win", IS_WINDOWS);
+
+// -- Mesh gradient background --
+
+mountGradientBackground();
 
 // -- Alpha banner dismiss --
 
