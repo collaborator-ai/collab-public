@@ -197,10 +197,13 @@ body.platform-win {
 	background: rgba(var(--canvas-bg-rgb), var(--canvas-opacity));
 }
 
-#panel-agent,
-#agent-resize,
-#agent-toggle {
-	display: none !important;
+#panel-agent {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	min-height: 0;
+	border-left: 1px solid var(--border);
+	background: rgba(var(--bg-rgb), calc(1 - (1 - var(--canvas-opacity)) / 2));
 }
 
 .platform-win #panel-agent {

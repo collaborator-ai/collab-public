@@ -187,6 +187,7 @@ interface ShortcutEntry {
 
 const TOGGLE_SHORTCUTS: Record<string, ShortcutEntry[]> = {
   KeyB: [
+    { modifier: altCmdOrCtrl, action: "toggle-agent" },
     { modifier: cmdOrCtrl, action: "sidebar-files" },
   ],
   Backslash: [{ modifier: cmdOrCtrl, action: "sidebar-files" }],
