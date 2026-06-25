@@ -53,18 +53,6 @@
 		"afterAllArtifactBuild": "scripts/fix-artifacts.cjs",
 		"extraResources": [
 			{
-				"from": "vendor/tmux/tmux",
-				"to": "tmux"
-			},
-			{
-				"from": "vendor/tmux/lib",
-				"to": "lib"
-			},
-			{
-				"from": "resources/tmux.conf",
-				"to": "tmux.conf"
-			},
-			{
 				"from": "resources/terminfo",
 				"to": "terminfo"
 			},

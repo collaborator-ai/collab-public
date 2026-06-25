@@ -50,12 +50,12 @@ import {
 import { stopImageWorker } from "./image-service";
 import { installCli } from "./cli-installer";
 import { listTerminalTargets } from "./terminal-target";
-import { readSessionMeta } from "./tmux";
+import { readSessionMeta } from "./session-store";
 import { registerBrowserIpc } from "./ipc-browser";
 import { registerAgentIpc } from "./acp-agent";
 
 // macOS apps launched from Finder don't inherit the user's shell
-// LANG, so child processes (tmux, shells) default to ASCII.
+// LANG, so child processes (shells) default to ASCII.
 if (!process.env.LANG || !process.env.LANG.includes("UTF-8")) {
   process.env.LANG = "en_US.UTF-8";
 }
@@ -736,8 +736,6 @@ function sendLoadingDone(): void {
 async function shutdownBackgroundServices(): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
-  pty.setShuttingDown(true);
-  await pty.killAllAndWait();
   await pty.shutdownSidecarIfIdle();
   watcher.stopWorker();
   if (!DISABLE_GIT_REPLAY) gitReplay.stopWorker();

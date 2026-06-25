@@ -318,15 +318,11 @@ export function createTileManager({
 		dom.terminalContainer = container;
 
 		let sessionId = tile.ptySessionId;
-		let scrollbackData = null;
-		let mode = "direct";
 		let restored = false;
 
 		if (sessionId) {
 			try {
-				const result = await window.shellApi.ptyReconnect(sessionId, 80, 24);
-				scrollbackData = result.scrollback;
-				mode = result.mode || "direct";
+				await window.shellApi.ptyReconnect(sessionId, 80, 24);
 				restored = true;
 			} catch {
 				sessionId = null;
@@ -343,7 +339,7 @@ export function createTileManager({
 		}
 
 		const handle = await createTerminal(container, sessionId, {
-			scrollbackData, mode, restored,
+			restored,
 			acceptStandardTitle: AGENT_TARGETS.has(tile.target),
 			onAgentTitle: (_sid, title) => {
 				if (tile.agentTitle === title) return;

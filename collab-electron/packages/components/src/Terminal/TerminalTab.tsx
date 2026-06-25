@@ -18,16 +18,12 @@ interface TerminalTabProps {
 	sessionId: string;
 	visible: boolean;
 	restored?: boolean;
-	scrollbackData?: string | null;
-	mode?: "tmux" | "sidecar" | undefined;
 }
 
 function TerminalTab({
 	sessionId,
 	visible,
 	restored,
-	scrollbackData,
-	mode,
 }: TerminalTabProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const fitRef = useRef<FitAddon | null>(null);
@@ -101,16 +97,10 @@ function TerminalTab({
 			);
 		}
 
-		if (restored && scrollbackData) {
-			term.write(scrollbackData);
-		}
-
-		// Shift+Enter: inject a CSI u escape sequence directly into the
-		// tmux pane (via send-keys -l) so TUI apps like Claude Code can
-		// detect the shift modifier. The normal ptyWrite path goes through
-		// tmux's input parser which strips modifier info in legacy mode.
-		// Block both keydown AND keypress to prevent xterm from also
-		// sending \r through the normal onData path.
+		// Shift+Enter: inject a CSI u escape sequence so TUI apps like
+		// Claude Code can detect the shift modifier. Block both keydown
+		// AND keypress to prevent xterm from also sending \r through the
+		// normal onData path.
 		const copySelectionToClipboard = () => {
 			const selection = term.getSelection();
 			if (!selection) return false;
@@ -254,9 +244,7 @@ function TerminalTab({
 			flushTimer = undefined;
 			if (firstData) {
 				firstData = false;
-				if (restored && mode !== "sidecar") {
-					term.write("\x1b[2J\x1b[H");
-				} else if (!restored) {
+				if (!restored) {
 					term.reset();
 				}
 			}

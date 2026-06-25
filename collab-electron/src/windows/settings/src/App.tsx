@@ -309,24 +309,17 @@ function ShortcutList({ items }: { items: { label: string; keys: string }[] }) {
   );
 }
 
-type TerminalMode = "tmux" | "sidecar";
+type TerminalMode = "sidecar";
 
 const TERMINAL_MODES: {
   value: TerminalMode;
   label: string;
   description: string;
-  deprecated?: boolean;
 }[] = [
   {
     value: "sidecar",
     label: "node-pty",
     description: "Clean scrollback rendering.",
-  },
-  {
-    value: "tmux",
-    label: "tmux",
-    description: "May cause scrollback artifacts.",
-    deprecated: true,
   },
 ];
 
@@ -392,7 +385,7 @@ function MacTerminalPane() {
   useEffect(() => {
     api.getPref("terminalMode")
       .then((v) => {
-        if (v === "tmux" || v === "sidecar") setMode(v);
+        if (v === "sidecar") setMode(v);
       })
       .catch(() => { });
   }, []);
@@ -414,17 +407,13 @@ function MacTerminalPane() {
       <div className="space-y-2">
         <p className="text-sm font-medium">Terminal backend</p>
         <div className="space-y-1.5">
-          {TERMINAL_MODES.map(({ value, label, description, deprecated }) => (
+          {TERMINAL_MODES.map(({ value, label, description }) => (
             <RadioOption
               key={value}
               selected={mode === value}
               onClick={() => { void handleModeChange(value); }}
               label={label}
-              description={
-                deprecated
-                  ? `${description} Deprecated — will be removed in a future release.`
-                  : description
-              }
+              description={description}
             />
           ))}
         </div>

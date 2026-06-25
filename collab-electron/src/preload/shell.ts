@@ -248,7 +248,7 @@ contextBridge.exposeInMainWorld("shellApi", {
     sessionId: string,
     cols: number,
     rows: number,
-  ): Promise<{ scrollback: string; mode: "tmux" | "sidecar" }> =>
+  ): Promise<{ sessionId: string; shell: string; displayName: string }> =>
     ipcRenderer.invoke("pty:reconnect", { sessionId, cols, rows }),
 
   ptyResize: (

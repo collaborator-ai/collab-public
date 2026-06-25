@@ -19,10 +19,6 @@ function App() {
   );
   const [exited, setExited] = useState(false);
   const [restored, setRestored] = useState(false);
-  const [scrollbackData, setScrollbackData] =
-    useState<string | null>(null);
-  const [sessionMode, setSessionMode] =
-    useState<"tmux" | "sidecar" | undefined>(undefined);
 
   useEffect(() => {
     const params = new URLSearchParams(
@@ -86,13 +82,7 @@ function App() {
             rows,
           );
         })
-        .then((result) => {
-          if (result.scrollback) {
-            setScrollbackData(result.scrollback);
-          }
-          if (result.mode) {
-            setSessionMode(result.mode);
-          }
+        .then(() => {
           setSessionId(existingSessionId);
         })
         .catch(async () => {
@@ -161,8 +151,6 @@ function App() {
       sessionId={sessionId}
       visible={true}
       restored={restored}
-      scrollbackData={scrollbackData}
-      mode={sessionMode}
     />
   );
 }

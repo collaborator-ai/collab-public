@@ -65,12 +65,11 @@ const registry = new Map();
  *
  * @param {HTMLElement} container
  * @param {string} sessionId
- * @param {{ scrollbackData?: string|null, mode?: "tmux"|"sidecar"|"direct", restored?: boolean, onAgentTitle?: ((sessionId: string, title: string) => void)|null, acceptStandardTitle?: boolean }} [options]
+ * @param {{ restored?: boolean, onAgentTitle?: ((sessionId: string, title: string) => void)|null, acceptStandardTitle?: boolean }} [options]
  * @returns {Promise<TerminalHandle>}
  */
 export async function createTerminal(container, sessionId, options = {}) {
 	const {
-		scrollbackData = null,
 		restored = false,
 		onAgentTitle = null,
 		acceptStandardTitle = false,
@@ -212,9 +211,6 @@ export async function createTerminal(container, sessionId, options = {}) {
 
 	if (!restored) {
 		term.write("\x1b[38;2;100;100;100mStarting...\x1b[0m");
-	}
-	if (restored && scrollbackData) {
-		term.write(scrollbackData);
 	}
 
 	// =========================================================================

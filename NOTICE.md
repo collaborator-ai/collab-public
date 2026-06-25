@@ -1,43 +1,14 @@
 # Third-Party Licenses
 
-## Vendored Binaries
+## Vendored Resources
 
-### tmux (`vendor/tmux/`)
-
-tmux is licensed under the ISC License.\
-Copyright (c) 2007 Nicholas Marriott <nicholas.marriott@gmail.com>
-
-Permission to use, copy, modify, and distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-### libevent (`vendor/tmux/lib/libevent_core-2.1.7.dylib`)
-
-Copyright (c) 2000-2007 Niels Provos <provos@citi.umich.edu>\
-Copyright (c) 2007-2012 Niels Provos and Nick Mathewson\
-Licensed under the 3-clause BSD license.
-
-### ncurses (`vendor/tmux/lib/libncursesw.6.dylib`, `resources/terminfo/`)
+### ncurses terminfo (`resources/terminfo/`)
 
 Copyright (c) 1998-2020 Free Software Foundation, Inc.\
 Licensed under the MIT/X11 license.
 
 The compiled terminfo database entry (`resources/terminfo/78/xterm-256color`)
-is also part of the ncurses project and covered by this license.
-
-### utf8proc (`vendor/tmux/lib/libutf8proc.3.dylib`)
-
-Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen,
-Tony Kelman, Jonas Fonseca, and other contributors\
-Licensed under the MIT license.
+is part of the ncurses project and covered by this license.
 
 ## Fonts (loaded from Google Fonts CDN)
 

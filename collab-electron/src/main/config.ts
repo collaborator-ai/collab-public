@@ -108,14 +108,6 @@ export function setPref(
   saveConfig(config);
 }
 
-export type TerminalMode = "tmux" | "sidecar";
-
-export function getTerminalMode(): TerminalMode {
-  // The sidecar is the only supported backend. tmux remains in the tree as
-  // dormant code pending removal, but nothing routes through it.
-  return "sidecar";
-}
-
 export function isTerminalTarget(value: unknown): value is TerminalTarget {
   return value === "auto"
     || value === "powershell"
