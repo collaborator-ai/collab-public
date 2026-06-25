@@ -10,6 +10,22 @@ describe("resolveTerminalTarget agents", () => {
     expect(resolved.displayName).toBe("Claude Code");
   });
 
+  test("pins a claude conversation id with --session-id", () => {
+    const resolved = resolveTerminalTarget("claude", "/some/dir", "abc-123");
+    expect(resolved.args).toEqual([
+      "--dangerously-skip-permissions",
+      "--session-id",
+      "abc-123",
+    ]);
+    expect(resolved.claudeSessionId).toBe("abc-123");
+  });
+
+  test("ignores a session id for agents without session support", () => {
+    const resolved = resolveTerminalTarget("codex", "/some/dir", "abc-123");
+    expect(resolved.args).toEqual(["--dangerously-bypass-approvals-and-sandbox"]);
+    expect(resolved.claudeSessionId).toBeUndefined();
+  });
+
   test("launches the codex binary with bypass flag", () => {
     const resolved = resolveTerminalTarget("codex", "/some/dir");
     expect(resolved.target).toBe("codex");

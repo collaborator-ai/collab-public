@@ -11,6 +11,7 @@ export interface SessionMeta {
   displayName?: string;
   command?: string;
   args?: string[];
+  claudeSessionId?: string;
   cwdHostPath?: string;
   cwdGuestPath?: string;
   backend?: "tmux" | "sidecar";

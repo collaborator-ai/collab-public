@@ -13,6 +13,13 @@ interface AgentTarget {
   command: string;
   args: string[];
   displayName: string;
+  /**
+   * Builds the flags that pin a stable conversation id, when the agent
+   * supports one. Without this, Claude Code's daemon may serve a recycled
+   * pre-warmed worker whose transcript is filed under that worker's cwd —
+   * leaving the session unresumable from the directory it was launched in.
+   */
+  sessionIdArgs?: (sessionId: string) => string[];
 }
 
 /** CLI agents a terminal can launch directly instead of a shell. */
@@ -21,6 +28,7 @@ const AGENT_TARGETS: Record<string, AgentTarget> = {
     command: "claude",
     args: ["--dangerously-skip-permissions"],
     displayName: "Claude Code",
+    sessionIdArgs: (sessionId) => ["--session-id", sessionId],
   },
   codex: {
     command: "codex",
@@ -42,6 +50,7 @@ export interface ResolvedTerminalTarget {
   cwd: string;
   cwdHostPath: string;
   cwdGuestPath?: string;
+  claudeSessionId?: string;
 }
 
 function withGuestPath(
@@ -160,11 +169,23 @@ function resolvePowerShellCommand(): string {
 export function resolveTerminalTarget(
   preferredTarget: TerminalTarget,
   cwdHostPath?: string,
+  sessionId?: string,
 ): ResolvedTerminalTarget {
   const initialCwd = cwdHostPath || os.homedir();
 
   const agent = AGENT_TARGETS[preferredTarget];
   if (agent) {
+    if (sessionId && agent.sessionIdArgs) {
+      return {
+        target: preferredTarget,
+        command: agent.command,
+        args: [...agent.args, ...agent.sessionIdArgs(sessionId)],
+        displayName: agent.displayName,
+        cwd: initialCwd,
+        cwdHostPath: initialCwd,
+        claudeSessionId: sessionId,
+      };
+    }
     return {
       target: preferredTarget,
       command: agent.command,

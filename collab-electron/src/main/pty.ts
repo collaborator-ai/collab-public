@@ -602,6 +602,7 @@ export async function createSession(
   const resolvedTarget = resolveTerminalTarget(
     preferredTarget ?? getTerminalTarget(),
     resolvedCwd,
+    crypto.randomUUID(),
   );
 
   await ensureSidecar();
@@ -665,6 +666,7 @@ export async function createSession(
       backend: "sidecar",
     }, {
       cwdGuestPath: resolvedTarget.cwdGuestPath,
+      claudeSessionId: resolvedTarget.claudeSessionId,
     }) as SessionMeta,
   );
 
