@@ -14,6 +14,7 @@ import { createPanel } from "./panel-manager.js";
 import { createWorkspaceManager } from "./workspace-manager.js";
 import { createCanvasRpc } from "./canvas-rpc.js";
 import { createTileManager } from "./tile-manager.js";
+import { resolveTileNavigation } from "./tile-navigation.js";
 import { updateTileTitle, getTileLabel } from "./tile-renderer.js";
 import { mountGradientBackground } from "./gradient-background.tsx";
 
@@ -1104,6 +1105,7 @@ async function init() {
 			action === "focus-tile-right" || action === "focus-tile-left" ||
 			action === "focus-tile-up" || action === "focus-tile-down"
 		) {
+			if (tileManager.getFullscreenTileId()) return;
 			const direction = action.replace("focus-tile-", "");
 			const currentId = tileManager.getFocusedTileId();
 			let target;
@@ -1349,25 +1351,34 @@ async function init() {
 		},
 	);
 
+	function navigateToTile(tileId, focus) {
+		const tile = getTile(tileId);
+		if (!tile) return;
+		const nav = resolveTileNavigation({
+			fullscreenTileId: tileManager.getFullscreenTileId(),
+			targetTileId: tileId,
+			focus,
+		});
+		switch (nav.kind) {
+			case "swap-fullscreen":
+				tileManager.toggleTileFullscreen(tileId);
+				break;
+			case "pan-and-focus":
+				edgeIndicators.panToTile(tile, { targetZoom: 1 });
+				tileManager.focusCanvasTile(tileId);
+				break;
+			case "pan":
+				edgeIndicators.panToTile(tile, { targetZoom: 1 });
+				break;
+		}
+	}
+
 	tileListWebview.webview.addEventListener(
 		"ipc-message", (event) => {
 			if (event.channel === "tile-list:peek-tile") {
-				const tileId = event.args[0];
-				const tile = getTile(tileId);
-				if (tile) {
-					edgeIndicators.panToTile(
-						tile, { targetZoom: 1 },
-					);
-				}
+				navigateToTile(event.args[0], false);
 			} else if (event.channel === "tile-list:focus-tile") {
-				const tileId = event.args[0];
-				const tile = getTile(tileId);
-				if (tile) {
-					edgeIndicators.panToTile(
-						tile, { targetZoom: 1 },
-					);
-					tileManager.focusCanvasTile(tileId);
-				}
+				navigateToTile(event.args[0], true);
 			} else if (event.channel === "tile-list:rename-tile") {
 				const tileId = event.args[0];
 				const newTitle = event.args[1];
