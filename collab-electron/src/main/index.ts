@@ -287,7 +287,7 @@ function registerToggleShortcuts(win: BrowserWindow): void {
   win.webContents.on("did-attach-webview", (_event, wc) => {
     wc.once("did-finish-load", () => {
       // Transparent compositor surface so terminal tiles can
-      // show through to the canvas/gradient background.
+      // show through to the canvas/vibrancy background.
       wc.insertCSS("html, body { background: transparent !important; }");
 
       attachShortcutListener(wc);
@@ -464,9 +464,6 @@ function createWindow(): void {
     height: state.height,
     minWidth: 400,
     minHeight: 400,
-    backgroundColor: nativeTheme.shouldUseDarkColors
-      ? "#121212"
-      : "#f8f8f8",
     webPreferences: {
       preload: getPreloadPath("shell"),
       contextIsolation: true,
@@ -478,7 +475,16 @@ function createWindow(): void {
   if (process.platform === "darwin") {
     Object.assign(windowOptions, {
       titleBarStyle: "hidden",
+      vibrancy: "under-window",
+      visualEffectState: "active",
       trafficLightPosition: { x: 14, y: 12 },
+    } satisfies Partial<Electron.BrowserWindowConstructorOptions>);
+  }
+
+  if (process.platform === "win32") {
+    Object.assign(windowOptions, {
+      backgroundColor: "#00000000",
+      backgroundMaterial: "mica",
     } satisfies Partial<Electron.BrowserWindowConstructorOptions>);
   }
 

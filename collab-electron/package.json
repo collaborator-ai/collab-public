@@ -118,7 +118,6 @@
 		"@agentclientprotocol/sdk": "^0.18.2",
 		"@lezer/common": "^1.5.1",
 		"@lezer/python": "^1.1.18",
-		"@paper-design/shaders-react": "^0.0.76",
 		"@parcel/watcher": "2.5.6",
 		"@postlight/parser": "^2.2.3",
 		"dependency-cruiser": "^17.3.8",
