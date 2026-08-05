@@ -1,6 +1,6 @@
 {
 	"name": "@collaborator/electron",
-	"version": "0.8.4",
+	"version": "0.8.5",
 	"private": true,
 	"license": "FSL-1.1-ALv2",
 	"type": "module",
