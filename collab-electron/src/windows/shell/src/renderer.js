@@ -217,7 +217,7 @@ async function init() {
 		label: "Navigator",
 		defaultWidth: 280,
 		direction: 1,
-		validModes: ["closed", "open"],
+		validModes: ["closed", "files", "tiles"],
 		prefKey: "sidebar-mode",
 		getAllWebviews,
 		onVisibilityChanged(visible) {
@@ -230,6 +230,10 @@ async function init() {
 				singletonViewer.send("nav-visibility", false);
 				canvasEl.focus();
 			}
+		},
+		onModeChanged(mode) {
+			updateSidebarContent(mode);
+			updateSegmentedControl(mode);
 		},
 	});
 	panelManager.initPrefs(prefNavWidth, prefSidebarMode);
@@ -485,11 +489,38 @@ async function init() {
 		tileListContainer, handleDndMessage,
 	);
 
-	// The sidebar shows the folder-grouped terminal tree. The file tree
-	// webview stays mounted (hidden) so its forwarding paths keep working,
-	// but it is no longer surfaced in the sidebar.
-	fileTreeContainer.style.display = "none";
-	tileListContainer.style.display = "flex";
+	function updateSidebarContent(mode) {
+		fileTreeContainer.style.display =
+			mode === "files" ? "flex" : "none";
+		tileListContainer.style.display =
+			mode === "tiles" ? "flex" : "none";
+	}
+	updateSidebarContent(panelManager.getMode());
+
+	const modeButtons =
+		document.querySelectorAll(".mode-btn");
+
+	function updateSegmentedControl(mode) {
+		for (const btn of modeButtons) {
+			btn.classList.toggle(
+				"active", btn.dataset.mode === mode,
+			);
+		}
+	}
+
+	for (const btn of modeButtons) {
+		btn.addEventListener("click", () => {
+			const targetMode = btn.dataset.mode;
+			if (
+				targetMode === "files" ||
+				targetMode === "tiles"
+			) {
+				panelManager.setMode(targetMode);
+			}
+		});
+	}
+
+	updateSegmentedControl(panelManager.getMode());
 
 	const workspaceManager = createWorkspaceManager({
 		navWebview,
@@ -815,7 +846,7 @@ async function init() {
 		const cwd = getTerminalCwd();
 		const size = getTerminalSize();
 		const tile = tileManager.createCanvasTile(
-			"term", cx, cy, { cwd, target: "claude", ...size },
+			"term", cx, cy, { cwd, ...size },
 		);
 		tileManager.spawnTerminal(tile, true);
 		tileManager.saveCanvasImmediate();
@@ -1053,12 +1084,22 @@ async function init() {
 		}
 		if (action === "toggle-settings") {
 			window.shellApi.toggleSettings();
-		} else if (action === "sidebar-files" || action === "sidebar-tiles") {
+		} else if (action === "sidebar-files") {
 			panelManager.toggle();
+		} else if (action === "sidebar-tiles") {
+			panelManager.toggleToMode("tiles");
 		} else if (action === "toggle-agent") {
 			agentPanel.toggle();
 		} else if (action === "focus-file-search") {
-			panelManager.setMode("open");
+			panelManager.setMode("files");
+			focusSurface("nav");
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					workspaceManager.getNavWebview().send(
+						"focus-search",
+					);
+				});
+			});
 		} else if (action === "add-workspace") {
 			window.shellApi.workspaceAdd();
 		} else if (action === "new-tile") {
@@ -1160,12 +1201,6 @@ async function init() {
 				singletonWebviews.settings.send(channel, ...args);
 			} else if (target === "nav") {
 				workspaceManager.getNavWebview().send(channel, ...args);
-				if (
-					channel === "workspace-added" ||
-					channel === "workspace-removed"
-				) {
-					tileListWebview.send(channel, ...args);
-				}
 			} else if (
 				target === "viewer" ||
 				target.startsWith("viewer:")
@@ -1302,24 +1337,6 @@ async function init() {
 
 	// -- Tile list init + click-to-navigate --
 
-	function createTerminalAtViewportCenter(cwd) {
-		setLastTerminalCwd(cwd);
-		const size = getTerminalSize();
-		const rect = panelViewer.getBoundingClientRect();
-		const cx =
-			(rect.width / 2 - viewportState.panX) /
-			viewportState.zoom - size.width / 2;
-		const cy =
-			(rect.height / 2 - viewportState.panY) /
-			viewportState.zoom - size.height / 2;
-		const tile = tileManager.createCanvasTile(
-			"term", cx, cy, { cwd, ...size },
-		);
-		tileManager.spawnTerminal(tile, true);
-		tileManager.saveCanvasImmediate();
-		minimap.update();
-	}
-
 	tileListWebview.webview.addEventListener(
 		"dom-ready", () => {
 			lastTileSnapshot = new Map();
@@ -1333,9 +1350,6 @@ async function init() {
 				}
 			}
 			tileListWebview.send("tile-list:init", initEntries);
-			tileListWebview.send(
-				"workspace-init", workspaceData.workspaces,
-			);
 
 			const focusedId = tileManager.getFocusedTileId();
 			if (focusedId) {
@@ -1378,16 +1392,6 @@ async function init() {
 				const tileId = event.args[0];
 				const newTitle = event.args[1];
 				tileManager.renameTile(tileId, newTitle);
-			} else if (event.channel === "terminal-tree:add-folder") {
-				window.shellApi.workspaceAdd();
-			} else if (event.channel === "terminal-tree:remove-folder") {
-				const folderPath = event.args[0];
-				if (folderPath) {
-					window.shellApi.workspaceRemoveByPath(folderPath);
-				}
-			} else if (event.channel === "terminal-tree:new-terminal") {
-				const cwd = event.args[0];
-				if (cwd) createTerminalAtViewportCenter(cwd);
 			}
 		},
 	);

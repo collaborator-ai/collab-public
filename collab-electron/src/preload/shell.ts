@@ -165,8 +165,6 @@ contextBridge.exposeInMainWorld("shellApi", {
   workspaceAdd: () => ipcRenderer.invoke("workspace:add"),
   workspaceRemove: (index: number) =>
     ipcRenderer.invoke("workspace:remove", index),
-  workspaceRemoveByPath: (path: string) =>
-    ipcRenderer.invoke("workspace:remove-by-path", path),
   workspaceList: () => ipcRenderer.invoke("workspace:list"),
 
   onWorkspaceAdded: (cb: (path: string) => void) => {
