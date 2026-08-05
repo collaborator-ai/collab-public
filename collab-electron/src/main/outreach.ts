@@ -62,18 +62,26 @@ export function initOutreach(
   getWindow: () => BrowserWindow | null,
 ): void {
   ipcMain.handle("outreach:schedule", async () => {
-    if (!calUrl) return;
-    await shell.openExternal(calUrl);
-    writeState({ status: "done" });
-    trackEvent("outreach_scheduled");
+    try {
+      if (!calUrl) return;
+      await shell.openExternal(calUrl);
+      writeState({ status: "done" });
+      trackEvent("outreach_scheduled");
+    } catch (err) {
+      console.warn("[outreach] schedule failed:", err);
+    }
   });
 
   ipcMain.handle("outreach:snooze", () => {
-    writeState({
-      status: "snoozed",
-      snoozedAt: new Date().toISOString(),
-    });
-    trackEvent("outreach_snoozed");
+    try {
+      writeState({
+        status: "snoozed",
+        snoozedAt: new Date().toISOString(),
+      });
+      trackEvent("outreach_snoozed");
+    } catch (err) {
+      console.warn("[outreach] snooze failed:", err);
+    }
   });
 
   setTimeout(() => {
