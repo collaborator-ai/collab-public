@@ -25,19 +25,27 @@ function showModal() {
 	document.body.appendChild(backdrop);
 
 	const close = () => {
-		document.removeEventListener("keydown", onKeydown);
+		document.removeEventListener("keydown", onKeydown, true);
 		backdrop.remove();
 	};
 	const snooze = () => {
-		window.shellApi.outreachSnooze();
+		window.shellApi.outreachSnooze().catch(() => {});
 		close();
 	};
 	const onKeydown = (e) => {
-		if (e.key === "Escape") snooze();
+		if (e.key === "Escape") {
+			e.stopPropagation();
+			snooze();
+			return;
+		}
+		if (e.key === "Backspace" || e.key === "Delete") {
+			e.stopPropagation();
+			e.preventDefault();
+		}
 	};
 
 	card.querySelector("#outreach-schedule").addEventListener("click", () => {
-		window.shellApi.outreachSchedule();
+		window.shellApi.outreachSchedule().catch(() => {});
 		close();
 	});
 	card.querySelector("#outreach-snooze").addEventListener("click", (e) => {
@@ -47,7 +55,7 @@ function showModal() {
 	backdrop.addEventListener("click", (e) => {
 		if (e.target === backdrop) snooze();
 	});
-	document.addEventListener("keydown", onKeydown);
+	document.addEventListener("keydown", onKeydown, true);
 
 	card.querySelector("#outreach-schedule").focus();
 }
