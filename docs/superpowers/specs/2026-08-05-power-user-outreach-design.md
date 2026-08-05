@@ -51,7 +51,9 @@ Gating, in order:
 
 IPC handlers (registered alongside the other `ipc-*` handlers):
 
-- `outreach:schedule` — `shell.openExternal(calUrl)`, write
+- `outreach:schedule` — open `calUrl` externally with
+  `metadata[posthogId]=<device ID>` appended (cal.com passes booking
+  metadata to webhooks, joining the booking back to product usage), write
   `{"status": "done"}`, track `outreach_scheduled`. The modal never shows
   again.
 - `outreach:snooze` — write `{"status": "snoozed", "snoozedAt": now}`, track

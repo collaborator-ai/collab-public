@@ -1,7 +1,7 @@
 import { app, ipcMain, shell, type BrowserWindow } from "electron";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { getFlagPayload, trackEvent } from "./analytics";
+import { getDeviceId, getFlagPayload, trackEvent } from "./analytics";
 import {
   parseOutreachState,
   shouldShowOutreach,
@@ -73,7 +73,11 @@ export function initOutreach(
   ipcMain.handle("outreach:schedule", async () => {
     try {
       if (!calUrl) return;
-      await shell.openExternal(calUrl);
+      // Attach the PostHog device ID so cal.com's webhook payload can
+      // join the booking back to product usage.
+      const bookingUrl = new URL(calUrl);
+      bookingUrl.searchParams.set("metadata[posthogId]", getDeviceId());
+      await shell.openExternal(bookingUrl.toString());
       writeState({ status: "done" });
       trackEvent("outreach_scheduled");
     } catch (err) {
