@@ -30,7 +30,9 @@ The app's PostHog identity is the device UUID persisted at
 ### Main process: `src/main/outreach.ts` (new)
 
 `initOutreach()` is called from `src/main/index.ts` once the shell window
-exists, then waits ~15 seconds so it never competes with launch work.
+exists and checks immediately; the modal is sent as soon as the flag
+evaluates and the shell window has finished loading (the send waits for
+`did-finish-load` if the renderer is still loading, so it is never lost).
 
 Gating, in order:
 

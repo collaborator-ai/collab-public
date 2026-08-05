@@ -9,7 +9,6 @@ import {
 } from "./outreach-state";
 
 const OUTREACH_FLAG = "power-user-outreach";
-const OUTREACH_DELAY_MS = 15_000;
 
 let calUrl: string | null = null;
 
@@ -54,6 +53,16 @@ async function maybeShowOutreach(
   if (!win || win.isDestroyed()) return;
 
   calUrl = url;
+  // The renderer registers its outreach listener while the page loads;
+  // sending before that silently drops the message.
+  if (win.webContents.isLoading()) {
+    win.webContents.once("did-finish-load", () => {
+      if (win.isDestroyed()) return;
+      win.webContents.send("outreach:show");
+      trackEvent("outreach_modal_shown");
+    });
+    return;
+  }
   win.webContents.send("outreach:show");
   trackEvent("outreach_modal_shown");
 }
@@ -84,7 +93,5 @@ export function initOutreach(
     }
   });
 
-  setTimeout(() => {
-    void maybeShowOutreach(getWindow);
-  }, OUTREACH_DELAY_MS);
+  void maybeShowOutreach(getWindow);
 }
