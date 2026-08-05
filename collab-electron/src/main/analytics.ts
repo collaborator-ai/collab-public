@@ -75,3 +75,11 @@ export function shutdownAnalytics(): Promise<void> {
     ),
   ]);
 }
+
+export async function getFlagPayload(flag: string): Promise<unknown> {
+  if (!client) return null;
+  const distinctId = getDeviceId();
+  const value = await client.getFeatureFlag(flag, distinctId);
+  if (!value) return null;
+  return (await client.getFeatureFlagPayload(flag, distinctId)) ?? null;
+}

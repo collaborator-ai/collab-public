@@ -53,6 +53,7 @@ import { listTerminalTargets } from "./terminal-target";
 import { readSessionMeta } from "./session-store";
 import { registerBrowserIpc } from "./ipc-browser";
 import { registerAgentIpc } from "./acp-agent";
+import { initOutreach } from "./outreach";
 
 // macOS apps launched from Finder don't inherit the user's shell
 // LANG, so child processes (shells) default to ASCII.
@@ -846,6 +847,7 @@ app.whenReady().then(async () => {
 
   initMainAnalytics();
   trackEvent("app_launched");
+  initOutreach(() => mainWindow);
 
   mainWindow!.webContents.on("did-finish-load", () => {
     sendLoadingDone();
