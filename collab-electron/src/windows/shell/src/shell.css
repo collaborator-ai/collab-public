@@ -1353,3 +1353,69 @@ body.platform-win {
 .dark .tile-rename-input:focus {
 	border-color: rgba(255, 255, 255, 0.5);
 }
+
+/* -- Power-user outreach modal -- */
+
+#outreach-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 10001;
+	background: rgba(0, 0, 0, 0.35);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#outreach-card {
+	background: var(--bg);
+	color: var(--fg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 28px 32px;
+	max-width: 400px;
+	text-align: center;
+	font-family: var(--font-sans);
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+#outreach-card h2 {
+	margin: 0 0 12px;
+	font-size: 18px;
+}
+
+#outreach-card p {
+	margin: 0 0 20px;
+	color: var(--muted);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+#outreach-schedule {
+	display: block;
+	width: 100%;
+	padding: 10px 16px;
+	border: none;
+	border-radius: 8px;
+	background: var(--edge-dot);
+	color: white;
+	font-size: 14px;
+	font-weight: 600;
+	font-family: var(--font-sans);
+	cursor: pointer;
+}
+
+#outreach-schedule:hover {
+	background: var(--edge-dot-hover);
+}
+
+#outreach-snooze {
+	display: inline-block;
+	margin-top: 14px;
+	color: var(--muted);
+	font-size: 12px;
+	text-decoration: none;
+}
+
+#outreach-snooze:hover {
+	text-decoration: underline;
+}

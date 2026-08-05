@@ -78,6 +78,16 @@ contextBridge.exposeInMainWorld("shellApi", {
     return () => ipcRenderer.removeListener("shell:settings", handler);
   },
 
+  onOutreachShow: (cb: () => void) => {
+    const handler = () => cb();
+    ipcRenderer.on("outreach:show", handler);
+    return () => ipcRenderer.removeListener("outreach:show", handler);
+  },
+  outreachSchedule: (): Promise<void> =>
+    ipcRenderer.invoke("outreach:schedule"),
+  outreachSnooze: (): Promise<void> =>
+    ipcRenderer.invoke("outreach:snooze"),
+
   onLoadingStatus: (cb: (message: string) => void) => {
     const handler = (_event: unknown, message: string) => cb(message);
     ipcRenderer.on("shell:loading-status", handler);

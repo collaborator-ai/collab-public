@@ -16,6 +16,7 @@ import { createCanvasRpc } from "./canvas-rpc.js";
 import { createTileManager } from "./tile-manager.js";
 import { resolveTileNavigation } from "./tile-navigation.js";
 import { updateTileTitle, getTileLabel } from "./tile-renderer.js";
+import { initOutreachModal } from "./outreach-modal.js";
 
 const CANVAS_DBLCLICK_SUPPRESS_MS = 500;
 const IS_WINDOWS = window.shellApi.getPlatform() === "win32";
@@ -35,6 +36,8 @@ document.getElementById("alpha-dismiss").addEventListener("click", (e) => {
 	e.preventDefault();
 	document.getElementById("alpha-label").hidden = true;
 });
+
+initOutreachModal();
 
 // -- Dark mode --
 
