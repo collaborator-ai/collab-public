@@ -8,7 +8,6 @@ target/
 !.env.example
 *.tsbuildinfo
 package-lock.json
-bun.lock
 .DS_Store
 Thumbs.db
 
