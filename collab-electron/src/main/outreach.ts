@@ -1,40 +1,17 @@
-import { app, ipcMain, shell, type BrowserWindow } from "electron";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { ipcMain, shell, type BrowserWindow } from "electron";
 import { getDeviceId, getFlagPayload, trackEvent } from "./analytics";
-import {
-  parseOutreachState,
-  shouldShowOutreach,
-  type OutreachState,
-} from "./outreach-state";
 
 const OUTREACH_FLAG = "power-user-outreach";
 
 let calUrl: string | null = null;
 
-function statePath(): string {
-  return join(app.getPath("userData"), "outreach.json");
-}
-
-function readState(): OutreachState | null {
-  try {
-    return parseOutreachState(readFileSync(statePath(), "utf-8"));
-  } catch {
-    return null;
-  }
-}
-
-function writeState(state: OutreachState): void {
-  const filePath = statePath();
-  mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, JSON.stringify(state));
-}
-
+// All outreach state lives in PostHog: the flag's release conditions
+// exclude persons whose outreach_status / outreach_snoozed_at properties
+// (written via $set below) say done or recently snoozed. The app just
+// evaluates the flag.
 async function maybeShowOutreach(
   getWindow: () => BrowserWindow | null,
 ): Promise<void> {
-  if (!shouldShowOutreach(readState(), new Date())) return;
-
   let payload: unknown;
   try {
     payload = await getFlagPayload(OUTREACH_FLAG);
@@ -78,8 +55,9 @@ export function initOutreach(
       const bookingUrl = new URL(calUrl);
       bookingUrl.searchParams.set("metadata[posthogId]", getDeviceId());
       await shell.openExternal(bookingUrl.toString());
-      writeState({ status: "done" });
-      trackEvent("outreach_scheduled");
+      trackEvent("outreach_scheduled", {
+        $set: { outreach_status: "done" },
+      });
     } catch (err) {
       console.warn("[outreach] schedule failed:", err);
     }
@@ -87,11 +65,9 @@ export function initOutreach(
 
   ipcMain.handle("outreach:snooze", () => {
     try {
-      writeState({
-        status: "snoozed",
-        snoozedAt: new Date().toISOString(),
+      trackEvent("outreach_snoozed", {
+        $set: { outreach_snoozed_at: new Date().toISOString() },
       });
-      trackEvent("outreach_snoozed");
     } catch (err) {
       console.warn("[outreach] snooze failed:", err);
     }

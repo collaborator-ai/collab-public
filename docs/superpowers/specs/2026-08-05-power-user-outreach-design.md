@@ -34,35 +34,39 @@ exists and checks immediately; the modal is sent as soon as the flag
 evaluates and the shell window has finished loading (the send waits for
 `did-finish-load` if the renderer is still loading, so it is never lost).
 
-Gating, in order:
+The app holds **no local outreach state**. All done/snoozed state lives in
+PostHog as person properties, and the flag's release conditions do the
+gating server-side:
 
-1. Read `userData/outreach.json`. Shape is either `{"status": "done"}` or
-   `{"status": "snoozed", "snoozedAt": "<ISO timestamp>"}`. A missing or
-   unparseable file means the modal has never been shown.
-2. If status is `done` → stop, permanently.
-3. If status is `snoozed` and `snoozedAt` is less than **3 days** ago → stop.
-4. Evaluate the flag with the existing posthog-node client and the device ID
-   (`getFeatureFlag` + `getFeatureFlagPayload`). If the client is not
-   initialized, the flag is disabled, the payload has no valid `calUrl`, or
-   the network call fails → log a warning and stop. Outreach failures must
-   never affect the app.
-5. Send `outreach:show` with `calUrl` to the shell window and track
-   `outreach_modal_shown`.
+- Group A (fresh): `distinct_id` in the target list AND `outreach_status`
+  is not set AND `outreach_snoozed_at` is not set.
+- Group B (snooze expired): `distinct_id` in the target list AND
+  `outreach_status` is not set AND `outreach_snoozed_at` more than
+  **3 days** ago.
+
+The app's only job: evaluate the flag with the existing posthog-node client
+and the device ID (`getFeatureFlag` + `getFeatureFlagPayload`). If the
+client is not initialized, the flag is disabled, the payload has no valid
+`calUrl`, or the network call fails → log a warning and stop. Outreach
+failures must never affect the app. Otherwise send `outreach:show` to the
+shell window and track `outreach_modal_shown`.
 
 IPC handlers (registered alongside the other `ipc-*` handlers):
 
 - `outreach:schedule` — open `calUrl` externally with
   `metadata[posthogId]=<device ID>` appended (cal.com passes booking
-  metadata to webhooks, joining the booking back to product usage), write
-  `{"status": "done"}`, track `outreach_scheduled`. The modal never shows
-  again.
-- `outreach:snooze` — write `{"status": "snoozed", "snoozedAt": now}`, track
-  `outreach_snoozed`. The modal is eligible again 3 days later,
-  indefinitely.
+  metadata to webhooks, joining the booking back to product usage), track
+  `outreach_scheduled` with `$set: {outreach_status: "done"}`. The flag
+  stops matching, so the modal never shows again.
+- `outreach:snooze` — track `outreach_snoozed` with
+  `$set: {outreach_snoozed_at: <now, ISO>}`. The flag stops matching until
+  3 days later, indefinitely.
 
-The gating decision is a pure function,
-`shouldShowOutreach(state, now): boolean`, so it can be unit tested without
-PostHog or the filesystem.
+The cal.com webhook additionally writes `outreach_status: "booked"` via its
+own `$set`, so completed bookings silence the modal even from a snoozed
+state. Known trade-off: `$set` propagation through PostHog ingestion takes
+seconds, so a snooze/schedule followed by an immediate relaunch can show
+the modal one extra time.
 
 ### Shell renderer: modal overlay
 
@@ -84,15 +88,14 @@ as "remind me later". The modal cannot be dismissed without recording either
 
 - No network / PostHog unreachable: warning log, no modal, no retry this
   launch. The next launch tries again.
-- Corrupt `outreach.json`: treated as never-shown; the file is rewritten on
-  the next user action.
 - Renderer never talks to PostHog for this feature; the main process owns
-  identity, flag evaluation, and state.
+  identity, flag evaluation, and the `$set` writes.
 
 ## Testing
 
-- Unit tests for `shouldShowOutreach`: never-shown, done, snooze active,
-  snooze expired, corrupt/missing state.
+- Gating logic lives in the flag's release conditions; verify it with
+  PostHog's flag test-evaluation API against persons in each state (fresh,
+  done, snoozed active, snooze expired).
 - Flag evaluation, IPC wiring, and the modal are verified manually with a
   test device ID added to the flag.
 
