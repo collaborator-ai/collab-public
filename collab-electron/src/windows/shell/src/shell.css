@@ -831,47 +831,11 @@ body.platform-win {
 	user-select: none;
 }
 
-/* Crosshair corner extensions — lines overshoot each corner */
-.canvas-tile::before,
-.canvas-tile::after {
-	content: '';
-	position: absolute;
-	pointer-events: none;
-}
-
-/* Horizontal lines overshoot left/right */
-.canvas-tile::before {
-	top: -1px;
-	bottom: -1px;
-	left: -9px;
-	right: -9px;
-	border-top: 1px solid var(--tile-border);
-	border-bottom: 1px solid var(--tile-border);
-}
-
-/* Vertical lines overshoot top/bottom */
-.canvas-tile::after {
-	left: -1px;
-	right: -1px;
-	top: -9px;
-	bottom: -9px;
-	border-left: 1px solid var(--tile-border);
-	border-right: 1px solid var(--tile-border);
-}
-
 .canvas-tile.tile-focused {
-	border-color: rgba(0, 0, 0, 0.5);
-}
-.canvas-tile.tile-focused::before,
-.canvas-tile.tile-focused::after {
 	border-color: rgba(0, 0, 0, 0.5);
 }
 
 .dark .canvas-tile.tile-focused {
-	border-color: rgba(255, 255, 255, 0.5);
-}
-.dark .canvas-tile.tile-focused::before,
-.dark .canvas-tile.tile-focused::after {
 	border-color: rgba(255, 255, 255, 0.5);
 }
 
@@ -1065,11 +1029,6 @@ body.platform-win {
 	border: none;
 }
 
-.canvas-tile.tile-fullscreen::before,
-.canvas-tile.tile-fullscreen::after {
-	display: none;
-}
-
 .canvas-tile.tile-fullscreen webview {
 	pointer-events: auto;
 }
@@ -1245,17 +1204,8 @@ body.platform-win {
 .canvas-tile.tile-selected {
 	border-color: #4a9eff;
 }
-.canvas-tile.tile-selected::before,
-.canvas-tile.tile-selected::after {
-	border-color: #4a9eff;
-}
 
 .canvas-tile.tile-dragging {
-}
-
-.canvas-tile.tile-dragging::before,
-.canvas-tile.tile-dragging::after {
-	display: none;
 }
 
 .selection-marquee {
