@@ -191,16 +191,41 @@ export class SidecarServer {
       client.destroy();
     }
 
-    // Close control server
+    // Only tear down the endpoint if this instance still owns it. A newer
+    // sidecar may have taken over the socket path and pid file; both our
+    // explicit unlinks AND Node's close-time unlink of unix socket paths
+    // would destroy the live sidecar's discovery files and orphan its
+    // sessions on the next app launch.
+    const ownsEndpoint = this.ownsPidFile();
+
     if (this.controlServer) {
-      await new Promise<void>((resolve) =>
-        this.controlServer!.close(() => resolve()),
-      );
+      if (ownsEndpoint) {
+        await new Promise<void>((resolve) =>
+          this.controlServer!.close(() => resolve()),
+        );
+      } else {
+        // Closing would unlink the successor's socket file; leave the
+        // listener open (unref'd) and let process exit reclaim the fd,
+        // which does not unlink the path.
+        this.controlServer.unref();
+      }
     }
 
-    // Clean up files
-    cleanupEndpoint(this.opts.controlSocketPath);
-    try { fs.unlinkSync(this.opts.pidFilePath); } catch {}
+    if (ownsEndpoint) {
+      cleanupEndpoint(this.opts.controlSocketPath);
+      try { fs.unlinkSync(this.opts.pidFilePath); } catch {}
+    }
+  }
+
+  private ownsPidFile(): boolean {
+    try {
+      const data = JSON.parse(
+        fs.readFileSync(this.opts.pidFilePath, "utf8"),
+      ) as PidFileData;
+      return data.pid === process.pid && data.token === this.opts.token;
+    } catch {
+      return false;
+    }
   }
 
   private shutdownSession(sessionId: string): Promise<void> {

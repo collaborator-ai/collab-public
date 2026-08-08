@@ -817,3 +817,40 @@ describe("Windows WSL smoke", () => {
     ctrl.destroy();
   });
 });
+
+describe("Stale sidecar shutdown does not clobber successor", () => {
+  it("leaves the successor's endpoint and pid file intact", async (t) => {
+    if (process.platform === "win32") {
+      t.skip("Takeover semantics are unix-socket specific");
+      return;
+    }
+
+    fs.mkdirSync(TEST_DIR, { recursive: true });
+    const staleServer = new SidecarServer({
+      controlSocketPath: CONTROL_SOCK,
+      sessionSocketDir: SESSION_DIR,
+      pidFilePath: PID_PATH,
+      token: "stale-token",
+    });
+    await staleServer.start();
+
+    // Successor takes over the same endpoint and pid file.
+    server = createServer();
+    await server.start();
+
+    await staleServer.shutdown();
+
+    assert.ok(
+      fs.existsSync(PID_PATH),
+      "stale shutdown must not delete the successor's pid file",
+    );
+    const pidData = JSON.parse(fs.readFileSync(PID_PATH, "utf8"));
+    assert.equal(pidData.token, TOKEN);
+
+    // The successor's control socket must still be reachable.
+    const ctrl = await connectControl();
+    const resp = await rpcCall(ctrl, 1, "sidecar.ping");
+    assert.equal((resp.result as PingResult).token, TOKEN);
+    ctrl.destroy();
+  });
+});
