@@ -17,6 +17,7 @@ import { createTileManager } from "./tile-manager.js";
 import { resolveTileNavigation } from "./tile-navigation.js";
 import { updateTileTitle, getTileLabel } from "./tile-renderer.js";
 import { initOutreachModal } from "./outreach-modal.js";
+import { promptForText } from "./prompt-modal.js";
 
 const CANVAS_DBLCLICK_SUPPRESS_MS = 500;
 const IS_WINDOWS = window.shellApi.getPlatform() === "win32";
@@ -661,13 +662,78 @@ async function init() {
 		const info = await window.shellApi.gitListBranches(root);
 		if (!info) return openPlain();
 
-		const items = info.branches.map((branch) => ({
+		const branchItems = info.branches.map((branch) => ({
 			id: `branch:${branch.name}`,
 			label: branch.isHead
 				? `${branch.name} (current)`
 				: branch.name,
 		}));
+		const items = [
+			{ id: "new-branch", label: "Create new branch…" },
+			{ id: "separator", label: "" },
+			...branchItems,
+		];
 		const picked = await window.shellApi.showContextMenu(items);
+
+		if (picked === "new-branch") {
+			const name = await promptForText({
+				title: "New branch",
+				label: "Branch name",
+				placeholder: "feature/my-change",
+			});
+			if (name === null) return openPlain();
+
+			let invalidReason = null;
+			if (name === "") {
+				invalidReason = "Branch name cannot be empty.";
+			} else if (name.startsWith("-")) {
+				invalidReason = "Branch name cannot start with '-'.";
+			} else if (name.includes("..")) {
+				invalidReason = "Branch name cannot contain '..'.";
+			} else if (
+				[...name].some((character) =>
+					/\s/.test(character) ||
+					"~^:?*[\\".includes(character)
+				)
+			) {
+				invalidReason =
+					"Branch name cannot contain whitespace, " +
+					"~, ^, :, ?, *, [, or backslash.";
+			}
+			if (invalidReason) {
+				await window.shellApi.showConfirmDialog({
+					message: "Invalid branch name",
+					detail: invalidReason,
+					buttons: ["OK"],
+				});
+				return;
+			}
+
+			const basePicked = await window.shellApi.showContextMenu(
+				branchItems,
+			);
+			const base = basePicked?.startsWith("branch:")
+				? basePicked.slice("branch:".length)
+				: undefined;
+			const result = await window.shellApi.gitResolveWorktree(
+				info.repoRoot,
+				name,
+				true,
+				base,
+			);
+			if (result.error) {
+				await window.shellApi.showConfirmDialog({
+					message: "Could not open branch worktree",
+					detail: result.error,
+					buttons: ["OK"],
+				});
+				return;
+			}
+
+			openTerminalAt(result.cwd, cx, cy);
+			return;
+		}
+
 		if (!picked || !picked.startsWith("branch:")) {
 			return openPlain();
 		}

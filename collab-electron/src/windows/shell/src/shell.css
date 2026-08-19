@@ -1369,3 +1369,93 @@ body.platform-win {
 #outreach-snooze:hover {
 	text-decoration: underline;
 }
+
+/* -- Text prompt modal -- */
+
+#prompt-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 1000000;
+	background: rgba(0, 0, 0, 0.35);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#prompt-card {
+	background: var(--bg);
+	color: var(--fg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 28px 32px;
+	width: min(400px, calc(100vw - 64px));
+	font-family: var(--font-sans);
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+#prompt-card h2 {
+	margin: 0 0 20px;
+	font-size: 18px;
+}
+
+#prompt-card label {
+	display: block;
+	margin-bottom: 7px;
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 600;
+}
+
+#prompt-input {
+	font: inherit;
+	font-size: 12px;
+	background: transparent;
+	color: inherit;
+	border: 1px solid rgba(128, 128, 128, 0.3);
+	border-radius: 3px;
+	padding: 8px 10px;
+	outline: none;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+#prompt-input:focus {
+	border-color: rgba(0, 0, 0, 0.5);
+}
+
+.dark #prompt-input:focus {
+	border-color: rgba(255, 255, 255, 0.5);
+}
+
+#prompt-input::placeholder {
+	color: rgba(128, 128, 128, 0.5);
+}
+
+#prompt-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 20px;
+}
+
+#prompt-actions button {
+	padding: 8px 16px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: transparent;
+	color: var(--fg);
+	font-size: 13px;
+	font-weight: 600;
+	font-family: var(--font-sans);
+	cursor: pointer;
+}
+
+#prompt-actions #prompt-ok {
+	border-color: transparent;
+	background: var(--edge-dot);
+	color: white;
+}
+
+#prompt-actions #prompt-ok:hover {
+	background: var(--edge-dot-hover);
+}
