@@ -652,6 +652,55 @@ async function init() {
 	});
 	minimapRef = minimap;
 
+	async function createBranchTerminal(cx, cy) {
+		const root = workspaceData.workspaces[0];
+		if (!root) return;
+
+		const openPlain = () => openTerminalAt(root, cx, cy);
+
+		const info = await window.shellApi.gitListBranches(root);
+		if (!info) return openPlain();
+
+		const items = info.branches.map((branch) => ({
+			id: `branch:${branch.name}`,
+			label: branch.isHead
+				? `${branch.name} (current)`
+				: branch.name,
+		}));
+		const picked = await window.shellApi.showContextMenu(items);
+		if (!picked || !picked.startsWith("branch:")) {
+			return openPlain();
+		}
+
+		const branch = picked.slice("branch:".length);
+		const result = await window.shellApi.gitResolveWorktree(
+			info.repoRoot,
+			branch,
+			false,
+		);
+		if (result.error) {
+			await window.shellApi.showConfirmDialog({
+				message: "Could not open branch worktree",
+				detail: result.error,
+				buttons: ["OK"],
+			});
+			return;
+		}
+
+		openTerminalAt(result.cwd, cx, cy);
+	}
+
+	/** The existing terminal-tile creation path, parameterised by cwd. */
+	function openTerminalAt(cwd, cx, cy) {
+		const size = getTerminalSize();
+		const tile = tileManager.createCanvasTile(
+			"term", cx, cy, { cwd, ...size },
+		);
+		tileManager.spawnTerminal(tile, true);
+		tileManager.saveCanvasImmediate();
+		minimap.update();
+	}
+
 	// -- Canvas RPC --
 
 	const handleCanvasRpc = createCanvasRpc({
@@ -873,18 +922,17 @@ async function init() {
 
 		const selected = await window.shellApi.showContextMenu([
 			{ id: "new-terminal", label: "New terminal tile" },
+			{
+				id: "new-terminal-branch",
+				label: "New terminal on branch…",
+			},
 			{ id: "new-browser", label: "New browser tile" },
 		]);
 
 		if (selected === "new-terminal") {
-			const cwd = getTerminalCwd();
-			const size = getTerminalSize();
-			const tile = tileManager.createCanvasTile(
-				"term", cx, cy, { cwd, ...size },
-			);
-			tileManager.spawnTerminal(tile, true);
-			tileManager.saveCanvasImmediate();
-			minimap.update();
+			openTerminalAt(getTerminalCwd(), cx, cy);
+		} else if (selected === "new-terminal-branch") {
+			await createBranchTerminal(cx, cy);
 		} else if (selected === "new-browser") {
 			const tile = tileManager.createCanvasTile(
 				"browser", cx, cy,
@@ -1505,8 +1553,24 @@ async function init() {
 	newTileBtn.addEventListener("click", async () => {
 		const selected = await window.shellApi.showContextMenu([
 			{ id: "new-terminal", label: "New terminal tile" },
+			{
+				id: "new-terminal-branch",
+				label: "New terminal on branch…",
+			},
 			{ id: "new-browser", label: "New browser tile" },
 		]);
+		if (selected === "new-terminal-branch") {
+			const rect = panelViewer.getBoundingClientRect();
+			const size = getTerminalSize();
+			const cx = (
+				rect.width / 2 - viewportState.panX
+			) / viewportState.zoom - size.width / 2;
+			const cy = (
+				rect.height / 2 - viewportState.panY
+			) / viewportState.zoom - size.height / 2;
+			await createBranchTerminal(cx, cy);
+			return;
+		}
 		const type = selected === "new-terminal"
 			? "term"
 			: selected === "new-browser" ? "browser" : null;
