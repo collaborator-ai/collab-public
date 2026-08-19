@@ -7,6 +7,11 @@ import {
   type BrowserWindow,
 } from "electron";
 import * as gitReplay from "./git-replay";
+import {
+  findRepoRoot,
+  listBranches,
+  resolveWorktree,
+} from "./git-worktree";
 import { importWebArticle } from "./import-service";
 import * as agentActivity from "./agent-activity";
 import { registerMethod } from "./json-rpc-server";
@@ -129,6 +134,42 @@ export function registerMiscHandlers(
           callback: () => resolve(null),
         });
       });
+    },
+  );
+
+  ipcMain.handle(
+    "git:list-branches",
+    async (_event, workspacePath: string) => {
+      const repoRoot = await findRepoRoot(workspacePath);
+      if (!repoRoot) return null;
+      return {
+        repoRoot,
+        branches: await listBranches(repoRoot),
+      };
+    },
+  );
+
+  ipcMain.handle(
+    "git:resolve-worktree",
+    async (
+      _event,
+      repoRoot: string,
+      branch: string,
+      create: boolean,
+      base?: string,
+    ) => {
+      try {
+        return {
+          cwd: await resolveWorktree(repoRoot, branch, {
+            create,
+            base,
+          }),
+        };
+      } catch (err) {
+        return {
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
     },
   );
 

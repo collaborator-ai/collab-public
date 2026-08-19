@@ -223,6 +223,23 @@ contextBridge.exposeInMainWorld("shellApi", {
     items: Array<{ id: string; label: string; enabled?: boolean }>,
   ) => ipcRenderer.invoke("context-menu:show", items),
 
+  gitListBranches: (workspacePath: string) =>
+    ipcRenderer.invoke("git:list-branches", workspacePath),
+
+  gitResolveWorktree: (
+    repoRoot: string,
+    branch: string,
+    create: boolean,
+    base?: string,
+  ) =>
+    ipcRenderer.invoke(
+      "git:resolve-worktree",
+      repoRoot,
+      branch,
+      create,
+      base,
+    ),
+
   openExternal: (url: string) => ipcRenderer.send("shell:open-external", url),
 
   trackEvent: (name: string, properties?: Record<string, unknown>) => {
