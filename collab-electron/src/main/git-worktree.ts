@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
 import { promisify } from "node:util";
@@ -90,6 +91,7 @@ export function parseBranchList(raw: string): BranchEntry[] {
 async function git(args: string[], repoRoot: string): Promise<string> {
   const { stdout } = await execFileAsync("git", args, {
     cwd: repoRoot,
+    maxBuffer: 50 * 1024 * 1024,
   });
   return stdout;
 }
@@ -134,7 +136,12 @@ export async function resolveWorktree(
   const existing = (await listWorktrees(repoRoot)).find(
     (entry) => entry.branch === branch,
   );
-  if (existing) return existing.path;
+  if (existing && existsSync(existing.path)) return existing.path;
+  if (existing) {
+    // Git still lists a worktree whose directory was removed by hand.
+    // Prune the stale record so the add below can succeed.
+    await git(["worktree", "prune"], repoRoot);
+  }
 
   const path = worktreeDirFor(repoRoot, branch);
   if (opts.create) {

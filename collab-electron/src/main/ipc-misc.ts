@@ -140,12 +140,16 @@ export function registerMiscHandlers(
   ipcMain.handle(
     "git:list-branches",
     async (_event, workspacePath: string) => {
-      const repoRoot = await findRepoRoot(workspacePath);
-      if (!repoRoot) return null;
-      return {
-        repoRoot,
-        branches: await listBranches(repoRoot),
-      };
+      try {
+        const repoRoot = await findRepoRoot(workspacePath);
+        if (!repoRoot) return null;
+        return {
+          repoRoot,
+          branches: await listBranches(repoRoot),
+        };
+      } catch {
+        return null;
+      }
     },
   );
 
